@@ -133,6 +133,8 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .script{counter-reset:s;list-style:none;padding:0;margin:var(--s3) 0}
 .script li{counter-increment:s;padding-left:var(--s5);position:relative;margin-bottom:var(--s3)}
 .script li::before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;border:1.5px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+.cite{font-size:11px;line-height:0;margin-left:1px}.cite a{color:var(--glucose);text-decoration:none;font-weight:700}
+.refs{padding-left:var(--s4);font-size:14px;line-height:1.55}.refs li{margin-bottom:var(--s2)}.refs a{color:var(--glucose);word-break:break-all}.refs .us{font-size:11px;border:1px solid var(--ketone);color:var(--ketone);border-radius:999px;padding:0 6px;margin-right:4px;white-space:nowrap}.refs .ot{font-size:11px;border:1px solid var(--line);color:var(--ink-soft);border-radius:999px;padding:0 6px;margin-right:4px;white-space:nowrap}
 .caution{font-size:14.5px;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:var(--s3);margin-top:var(--s5)}
 footer{padding:var(--s5) 0 var(--s6);text-align:center;font-size:13px;color:var(--ink-soft)}
 footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:block;margin-bottom:var(--s1)}
@@ -198,7 +200,7 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     </svg>
     <span class="kicker">몸은 속는 게 아니라, 연료를 바꿔 쓴다</span>
     <h1>방탄커피 속<br>연료 전환 이야기</h1>
-    <p class="thesis">탄수화물이 끊기면 몸은 <b style="color:var(--glucose)">포도당</b> 위주에서 <b style="color:var(--fat)">지방</b>과 <b style="color:var(--ketone)">케톤</b>을 더 많이 쓰는 쪽으로 비율을 옮깁니다. 방탄커피는 그 전환을 <i>돕는</i> 도구이지, 마법 스위치가 아닙니다.</p>
+    <p class="thesis">탄수화물이 끊기면 몸은 <b style="color:var(--glucose)">포도당</b> 위주에서 <b style="color:var(--fat)">지방</b>과 <b style="color:var(--ketone)">케톤</b>을 더 많이 쓰는 쪽으로 비율을 옮깁니다.<sup class="cite"><a href="#r3" aria-label="근거 3">[3]</a><a href="#r4" aria-label="근거 4">[4]</a></sup> 방탄커피는 그 전환을 <i>돕는</i> 도구이지, 마법 스위치가 아닙니다.</p>
     <ul class="legend" aria-label="색상 범례">
       <li><span class="sw" style="background:var(--glucose)"></span>포도당</li>
       <li><span class="sw" style="background:var(--fat)"></span>지방</li>
@@ -247,7 +249,7 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     </figure>
     <div class="fix reveal">
       <span class="hd">비유의 정정</span>
-      <p>“하이브리드 자동차가 전기에서 휘발유로 넘어간다”는 비유는 직관적이지만, 몸은 엔진을 <b>통째로 교체하지 않습니다.</b> 두 연료를 항상 섞어 쓰고, 바늘이 <b>비율을 옮길 뿐</b>입니다. 그래서 위 게이지의 바늘도 끝까지 가지 않습니다.</p>
+      <p>“하이브리드 자동차가 전기에서 휘발유로 넘어간다”는 비유는 직관적이지만, 몸은 엔진을 <b>통째로 교체하지 않습니다.</b> 두 연료를 항상 섞어 쓰고, 바늘이 <b>비율을 옮길 뿐</b>입니다.<sup class="cite"><a href="#r3" aria-label="근거 3">[3]</a><a href="#r4" aria-label="근거 4">[4]</a></sup> 그래서 위 게이지의 바늘도 끝까지 가지 않습니다.</p>
     </div>
   </div>
 </section>
@@ -297,7 +299,7 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     </figure>
     <div class="fix reveal">
       <span class="hd">원문의 과장 교정</span>
-      <p>원문의 “인슐린이 거의 0”은 과장입니다. 지방만 섭취하면 인슐린 자극이 <b>매우 작지만 0은 아닙니다.</b> 그래서 손잡이를 맨 왼쪽에 둬도 인슐린 바는 비어 있지 않습니다.</p>
+      <p>원문의 “인슐린이 거의 0”은 과장입니다. 지방만 섭취하면 인슐린 자극이 <b>매우 작지만 0은 아닙니다.</b> 그래서 손잡이를 맨 왼쪽에 둬도 인슐린 바는 비어 있지 않습니다. 인슐린이 낮아야 지방 분해와 케톤 생성이 활발해진다는 점은 대사 생리학의 표준 설명입니다.<sup class="cite"><a href="#r3" aria-label="근거 3">[3]</a><a href="#r5" aria-label="근거 5">[5]</a></sup></p>
     </div>
   </div>
 </section>
@@ -370,7 +372,8 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     </figure>
     <div class="fix reveal">
       <span class="hd">지름길의 정체</span>
-      <p><b>MCT</b>(중쇄지방)는 장에서 문맥정맥을 타고 <b>간으로 곧장</b> 들어가 빠르게 케톤으로 바뀝니다. 반면 버터 같은 긴사슬 지방은 림프와 혈액을 돌아 느리게 갑니다. 다만 MCT 한 잔이 올리는 케톤은 <b>몇 시간 이어지는 일시적 상승</b>(개인차 있음)입니다. 전환 스위치는 <b>공복 시간과 탄수화물 제한</b>이고, MCT는 그 전환을 <b>보조하는 마중물</b>입니다.</p>
+      <p><b>MCT</b>(중쇄지방)는 장에서 문맥정맥을 타고 <b>간으로 곧장</b> 들어가 빠르게 케톤으로 바뀝니다. 반면 버터 같은 긴사슬 지방은 림프와 혈액을 돌아 느리게 갑니다. 다만 MCT 한 잔이 올리는 케톤은 <b>몇 시간 이어지는 일시적 상승</b>(개인차 있음)입니다. 전환 스위치는 <b>공복 시간과 탄수화물 제한</b>이고, MCT는 그 전환을 <b>보조하는 마중물</b>입니다.<sup class="cite"><a href="#r12" aria-label="근거 12">[12]</a><a href="#r13" aria-label="근거 13">[13]</a></sup></p>
+      <p>탄수화물을 함께 먹으면 MCT가 올리는 케톤이 줄어든다는 결과가 있고<sup class="cite"><a href="#r12" aria-label="근거 12">[12]</a><a href="#r14" aria-label="근거 14">[14]</a></sup> MCT를 늘리면 복통 같은 위장 증상이 더 잦았다는 보고도 있습니다.<sup class="cite"><a href="#r13" aria-label="근거 13">[13]</a></sup> 또 공복 첫 22시간 동안에도 간의 포도당 생산 중 약 64%는 이미 <b>새로 합성</b>된 것이어서(이후 비중이 더 커짐)<sup class="cite"><a href="#r1" aria-label="근거 1">[1]</a></sup> 글리코겐이 “바닥”이 되는 시점은 한 시각으로 못 박을 수 없습니다. “직행로” 경로 자체는 일반적인 생리학 설명이며, 이번 조사에서 사람 대상 직접 측정 연구는 확인하지 못했습니다.</p>
     </div>
   </div>
 </section>
@@ -418,7 +421,7 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     </figure>
     <div class="fix reveal">
       <span class="hd">원문의 과장 교정</span>
-      <p>“포도당만 쓰던 뇌가 케톤을 쓴다”에서 뇌가 <b>포도당을 끊는다</b>고 읽으면 틀립니다. 케톤이 아무리 늘어도 뇌는 포도당을 계속 씁니다. 부족분은 간이 아미노산 등으로 <b>새로 만들어(당신생합성) 채웁니다.</b> 또 “가짜 허기를 차단한다”는 말은 <b>식욕이 줄 수 있다는 보고가 있지만 근거가 제한적이고 개인차가 큽니다.</b></p>
+      <p>“포도당만 쓰던 뇌가 케톤을 쓴다”에서 뇌가 <b>포도당을 끊는다</b>고 읽으면 틀립니다. 케톤이 뇌의 주연료가 되는 것은 5~6주 단식 같은 장기 상태에서 관찰된 일이며(소규모 연구)<sup class="cite"><a href="#r2" aria-label="근거 2">[2]</a></sup> 그때도 포도당 사용이 완전히 사라지지는 않습니다. 부족분은 간이 아미노산 등으로 <b>새로 만들어(당신생합성) 채웁니다.</b><sup class="cite"><a href="#r1" aria-label="근거 1">[1]</a><a href="#r3" aria-label="근거 3">[3]</a></sup> 또 “가짜 허기를 차단한다”는 말은 <b>식욕 감소 효과는 작고 개인차가 큽니다.</b> 메타분석에서도 변화 폭이 작았고<sup class="cite"><a href="#r11" aria-label="근거 11">[11]</a></sup> 미국 NIH 병동 시험에서는 케톤식이 쪽의 허기·포만감이 저지방식과 다르지 않았으며 오히려 섭취량이 하루 약 689kcal 더 많았습니다.<sup class="cite"><a href="#r7" aria-label="근거 7">[7]</a></sup></p>
     </div>
   </div>
 </section>
@@ -454,7 +457,11 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
       <div class="big" id="big" aria-live="polite"></div>
       <figcaption id="c5" aria-live="polite"></figcaption>
     </figure>
-    <p class="modelnote">버터 1큰술≈100kcal, MCT 오일 1큰술≈115kcal로 어림했습니다. 체지방 1kg≈7,700kcal는 흔히 쓰는 대략의 기준이며, 실제 체중은 수분·근육·개인 대사에 따라 달라집니다.</p>
+    <p class="modelnote">버터 1큰술(14.2g)≈102kcal는 미국 농무부(USDA) 자료 기준입니다.<sup class="cite"><a href="#r10" aria-label="근거 10">[10]</a></sup> MCT 오일 1큰술≈115kcal는 어림값이므로 제품 영양성분표로 확인하세요. 체지방 1kg≈7,700kcal는 흔히 쓰는 단순 환산으로, 체지방이 적은 사람에게는 필요한 열량 부족분을 과대평가할 수 있고 실제 체중은 수분·근육·개인 대사에 따라 달라집니다.<sup class="cite"><a href="#r8" aria-label="근거 8">[8]</a></sup></p>
+    <div class="fix reveal">
+      <span class="hd">같은 열량이면?</span>
+      <p>NIH 병동 시험에서 같은 열량으로 탄수화물을 지방으로 바꾸고 케톤식이로 전환했을 때, 에너지 소비 증가는 하루 약 60~100kcal(대사 챔버), 이중표지수 측정으로 약 150kcal 정도로 <b>작았습니다.</b><sup class="cite"><a href="#r6" aria-label="근거 6">[6]</a></sup> 연료의 종류가 바뀌어도 <b>총 열량 수지가 여전히 핵심</b>이라는 이 장의 결론과 같은 방향입니다. 다만 소수 인원·단기간 연구입니다.</p>
+    </div>
   </div>
 </section>
 
@@ -489,7 +496,37 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
       </table>
     </div>
 
-    <p class="caution reveal">이 페이지는 일반적인 생리학 개념을 쉽게 풀어 쓴 교육용 자료이며 의학적 조언이 아닙니다. 당뇨(특히 약·인슐린 사용 중), 임신·수유, 간·담낭·췌장 질환, 섭식장애가 있거나 지질 수치가 높은 분은 시도 전에 의료진과 상담하세요. 버터가 많이 든 방식은 포화지방 섭취가 늘 수 있습니다.</p>
+    <p class="caution reveal">이 페이지는 일반적인 생리학 개념을 쉽게 풀어 쓴 교육용 자료이며 의학적 조언이 아닙니다. 당뇨(특히 약·인슐린 사용 중), 임신·수유, 간·담낭·췌장 질환, 섭식장애가 있거나 지질 수치가 높은 분은 시도 전에 의료진과 상담하세요. 버터가 많이 든 방식은 포화지방 섭취가 늘 수 있고, 미국심장협회(AHA)는 포화지방을 불포화지방으로 바꾸면 LDL 콜레스테롤과 심혈관질환 위험이 낮아진다고 권고합니다.<sup class="cite"><a href="#r9" aria-label="근거 9">[9]</a></sup></p>
+  </div>
+</section>
+
+<section class="act" id="refs">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">참</span>
+      <h2>근거 자료</h2>
+      <p>인용 정보는 검색으로 확인한 서지·초록 수준이며, 논문 전문을 모두 읽은 것은 아닙니다. 이번 조사에서 <b>방탄커피 자체가 체중 감량에 효과가 있는지를 직접 검증한 임상시험은 확인하지 못했습니다.</b> 이 페이지는 연료 전환의 <i>기전</i>을 다룬 연구들에 근거합니다.</p>
+      <h3 style="font-size:17px;margin:var(--s4) 0 var(--s2)">미국 연구기관 · 기관 자료</h3>
+      <ol class="refs" start="1">
+        <li id="r1"><span class="us">US</span>Rothman DL 외. 금식 중 사람의 간 글리코겐 분해와 당신생합성 정량(13C NMR). <i>Science</i> 1991;254:573–576. <a href="https://www.science.org/doi/10.1126/science.1948033">science.org/doi/10.1126/science.1948033</a> <small>— 22시간까지 포도당 생산의 64%가 당신생합성, 이후 82%·96%.</small></li>
+        <li id="r2"><span class="us">US</span>Owen OE 외. Brain metabolism during fasting. <i>J Clin Invest</i> 1967;46:1589–1595. <a href="https://www.jci.org/articles/view/105650">jci.org/articles/view/105650</a> <small>— 5~6주 단식 환자 3명에서 케톤이 뇌의 주연료.</small></li>
+        <li id="r3"><span class="us">US</span>Cahill GF Jr. Fuel metabolism in starvation. <i>Annu Rev Nutr</i> 2006;26:1–22. <a href="https://pubmed.ncbi.nlm.nih.gov/16848698/">PubMed 16848698</a></li>
+        <li id="r4"><span class="us">US</span>de Cabo R, Mattson MP. Effects of intermittent fasting on health, aging, and disease. <i>N Engl J Med</i> 2019;381:2541–2551. <a href="https://www.nejm.org/doi/full/10.1056/NEJMra1905136">doi 10.1056/NEJMra1905136</a> <small>— 간 유래 포도당에서 지방 유래 케톤으로의 대사 전환(metabolic switching).</small></li>
+        <li id="r5"><span class="us">US</span>Puchalska P, Crawford PA. Multi-dimensional roles of ketone bodies in fuel metabolism, signaling, and therapeutics. <i>Cell Metab</i> 2017;25:262–284. <a href="https://pubmed.ncbi.nlm.nih.gov/28178565/">PubMed 28178565</a></li>
+        <li id="r6"><span class="us">US</span>Hall KD 외(NIH). Energy expenditure and body composition changes after an isocaloric ketogenic diet in overweight and obese men. <i>Am J Clin Nutr</i> 2016;104:324–333. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4962163">PMC4962163</a> <small>— 남성 17명, 에너지 소비 증가는 소폭.</small></li>
+        <li id="r7"><span class="us">US</span>Hall KD 외(NIH). Effect of a plant-based, low-fat diet versus an animal-based, ketogenic diet on ad libitum energy intake. <i>Nat Med</i> 2021. <a href="https://www.nih.gov/news-events/news-releases/nih-study-compares-low-fat-plant-based-diet-low-carb-animal-based-diet">NIH 보도자료</a> <small>— 성인 20명 교차시험, 케톤식이 쪽 섭취가 689±73kcal/일 많음, 허기·포만감 차이 없음.</small></li>
+        <li id="r8"><span class="us">US</span>Hall KD. What is the required energy deficit per unit weight loss? <i>Int J Obes</i> 2008. <a href="https://pubmed.ncbi.nlm.nih.gov/17848938/">PubMed 17848938</a> <small>— 3,500kcal/lb 규칙은 체지방이 적은 사람에게 과대평가.</small></li>
+        <li id="r9"><span class="us">US</span>Sacks FM 외. Dietary fats and cardiovascular disease: a presidential advisory from the American Heart Association. <i>Circulation</i> 2017;136:e1–e23. <a href="https://pubmed.ncbi.nlm.nih.gov/28620111/">PubMed 28620111</a></li>
+        <li id="r10"><span class="us">US</span>USDA 영양성분 데이터베이스, 버터(가염). 100g당 717kcal, 1큰술(14.2g)≈102kcal. <a href="https://ndb.nal.usda.gov/ndb/foods/show/1">ndb.nal.usda.gov/ndb/foods/show/1</a> <small>— 구(舊) SR Legacy 자료이므로 최신 FoodData Central 항목으로 재확인 권장.</small></li>
+      </ol>
+      <h3 style="font-size:17px;margin:var(--s4) 0 var(--s2)">보조 근거 (미국 외 또는 소속 미확인 · 소규모 시험)</h3>
+      <ol class="refs" start="11">
+        <li id="r11"><span class="ot">AU</span>Gibson AA 외. Do ketogenic diets really suppress appetite? A systematic review and meta-analysis. <i>Obes Rev</i> 2015;16:64–76. <a href="https://ses.library.usyd.edu.au/handle/2123/16246">ses.library.usyd.edu.au</a> <small>— 식욕 감소는 있으나 변화 폭이 작음.</small></li>
+        <li id="r12"><span class="ot">?</span>Ketosis after intake of coconut oil and caprylic acid—with and without glucose: a cross-over study in healthy older adults. <i>Front Nutr</i> 2020. <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7175812/">PMC7175812</a> <small>— 15명, 12시간 공복 후 C8의 케톤 상승 효과가 가장 큼, 포도당 병용 시 비교.</small></li>
+        <li id="r13"><span class="ot">?</span>The effect of medium chain triglycerides on time to nutritional ketosis and symptoms of keto-induction in healthy adults: a randomised controlled clinical trial. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5987302/">PMC5987302</a> <small>— 28명, MCT군이 BHB는 더 높았으나 케토시스 도달 시간 차이는 유의하지 않았고 복통이 더 잦음.</small></li>
+        <li id="r14"><span class="ot">?</span>Effect of glucose on medium chain triglyceride induced ketosis in healthy adults in a randomized, double-blind, controlled study. <a href="https://pubmed.ncbi.nlm.nih.gov/41957196/">PubMed 41957196</a> <small>— 11명, 포도당이 많으면 C8의 BHB 상승 효과가 사라짐.</small></li>
+      </ol>
+    </div>
   </div>
 </section>
 </main>
@@ -689,7 +726,7 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
   /* ───── Ⅴ 열량 수지 ───── */
   function render5(){
     var tdee = +$('tdee').value, b = +$('butter').value, m = +$('mct').value, meals = +$('meals').value;
-    var cof = b * 100 + m * 115, intake = cof + meals, bal = intake - tdee;
+    var cof = b * 102 + m * 115, intake = cof + meals, bal = intake - tdee;
     $('o5t').textContent = fmt(tdee) + ' kcal';
     $('o5b').textContent = b + '큰술';
     $('o5m').textContent = m + '큰술';
@@ -709,11 +746,11 @@ footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:blo
     } else if (bal < 0) {
       big.innerHTML = '−' + fmt(-bal) + '<small>kcal/일 부족</small>';
       big.style.color = 'var(--ketone)';
-      $('c5').textContent = '부족한 ' + fmt(-bal) + ' kcal를 몸이 체지방으로 메웁니다. 이 상태가 일주일 이어지면 이론상 체지방 약 ' + kg.toFixed(1) + 'kg에 해당합니다. 감량의 열쇠는 방탄커피 자체가 아니라 이 부족분입니다.';
+      $('c5').textContent = '부족한 ' + fmt(-bal) + ' kcal를 몸이 체지방으로 메웁니다. 이 상태가 일주일 이어지면 체지방 약 ' + kg.toFixed(1) + 'kg에 해당하는 단순 환산입니다. 감량의 열쇠는 방탄커피 자체가 아니라 이 부족분입니다.';
     } else {
       big.innerHTML = '+' + fmt(bal) + '<small>kcal/일 초과</small>';
       big.style.color = 'var(--fat)';
-      $('c5').textContent = '소비보다 ' + fmt(bal) + ' kcal 더 들어옵니다. 케톤 대사 중이어도 이 상태가 이어지면 이론상 일주일에 체지방 약 ' + kg.toFixed(1) + 'kg이 쌓일 수 있습니다.';
+      $('c5').textContent = '소비보다 ' + fmt(bal) + ' kcal 더 들어옵니다. 케톤 대사 중이어도 이 상태가 이어지면 단순 환산으로 일주일에 체지방 약 ' + kg.toFixed(1) + 'kg이 쌓일 수 있습니다.';
     }
   }
   ['tdee','butter','mct','meals'].forEach(function(id){ $(id).addEventListener('input', render5); });
