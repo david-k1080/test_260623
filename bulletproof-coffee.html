@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#efe3c4">
+<title>방탄커피 노트북 — 연료가 바뀌는 원리</title>
+<meta name="description" content="방탄커피 다이어트의 기전을 직접 움직여 보며 이해하는 인터랙티브 해부 노트">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+/* 간격은 피보나치 수열(5·8·13·21·34·55), 본문 행간은 황금비(≈1.618)에 맞춘다. */
+:root{
+  --paper:#f1e6c8; --paper-2:#e9dcb8; --plate:#f7efd9;
+  --ink:#3a2a1b; --ink-soft:#66503a; --line:#8c7455;
+  --glucose:#2d5f7e; --fat:#a2432a; --ketone:#3f6b4a; --mct:#c08a1e;
+  --s1:5px; --s2:8px; --s3:13px; --s4:21px; --s5:34px; --s6:55px;
+  --serif:"Nanum Myeongjo","Noto Serif KR","Batang","AppleMyungjo",serif;
+  --hand:"Nanum Pen Script","Gaegu","Nanum Myeongjo",serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px;-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.65;
+  background-color:var(--paper);
+  background-image:
+    radial-gradient(ellipse at 20% 0%,rgba(255,250,230,.7),transparent 55%),
+    radial-gradient(ellipse at 100% 100%,rgba(150,110,60,.18),transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .12 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  word-break:keep-all;overflow-wrap:break-word;
+}
+.wrap{max-width:680px;margin:0 auto;padding:0 var(--s4)}
+h1,h2,h3{font-weight:800;line-height:1.25;margin:0}
+p{margin:0 0 var(--s3)}
+b,strong{font-weight:800}
+:focus-visible{outline:3px solid var(--mct);outline-offset:3px;border-radius:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* 상단 바 */
+.bar{position:sticky;top:0;z-index:20;background:rgba(241,230,200,.93);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;height:48px}
+.bar .brand{font-size:14px;font-weight:800;letter-spacing:.02em}
+.bar nav{display:flex;gap:var(--s2)}
+.bar nav a{
+  display:grid;place-items:center;min-width:34px;height:34px;border:1px solid var(--line);border-radius:50%;
+  color:var(--ink);text-decoration:none;font-size:13px;font-weight:700;background:transparent;transition:background .2s,color .2s}
+.bar nav a.on{background:var(--ink);color:var(--paper)}
+.prog{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--fat)}
+
+/* 영웅 */
+.hero{padding:var(--s5) 0 var(--s4);text-align:center}
+.hero svg{width:min(62vw,230px);height:auto;display:block;margin:0 auto var(--s3)}
+.kicker{font-family:var(--hand);font-size:24px;color:var(--fat);transform:rotate(-1.5deg);display:inline-block;margin-bottom:var(--s2)}
+.hero h1{font-size:clamp(30px,8.4vw,46px);margin-bottom:var(--s3)}
+.hero .thesis{font-size:19px;max-width:30em;margin:0 auto var(--s4)}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);justify-content:center;font-size:14px;margin:0 0 var(--s3);padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:var(--s2)}
+.sw{width:14px;height:14px;border-radius:50%;border:1px solid var(--ink);display:inline-block}
+.sw.k{border-radius:2px;transform:rotate(45deg) scale(.85)}
+.hint{font-size:14px;color:var(--ink-soft);border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:var(--s2) 0;margin-top:var(--s4)}
+
+/* 막(幕) */
+.act{padding:var(--s6) 0 var(--s4);border-top:1px solid var(--line);position:relative}
+.act .no{font-family:var(--hand);font-size:30px;color:var(--fat);line-height:1;display:block;margin-bottom:var(--s1)}
+.act h2{font-size:clamp(24px,6.4vw,32px);margin-bottom:var(--s3)}
+.lead{font-size:18px}
+.js .reveal{opacity:0;transform:translateY(13px);transition:opacity .7s ease,transform .7s ease}
+.js .reveal.in{opacity:1;transform:none}
+
+/* 도판(Plate) */
+.plate{
+  margin:var(--s4) 0;padding:var(--s4) var(--s3) var(--s3);background:var(--plate);position:relative;
+  border:1px solid var(--ink);box-shadow:inset 0 0 0 4px var(--plate),inset 0 0 0 5px var(--line),0 8px 21px rgba(80,55,25,.14)}
+.plate .tag{position:absolute;top:-11px;left:var(--s3);background:var(--paper);padding:0 var(--s2);font-size:12px;letter-spacing:.06em;color:var(--ink-soft)}
+.plate svg{width:100%;height:auto;display:block}
+.plate figcaption{margin-top:var(--s3);padding-top:var(--s3);border-top:1px dashed var(--line);font-size:16px;min-height:5.2em}
+.sketch{filter:url(#rough)}
+svg text{font-family:var(--serif);fill:var(--ink)}
+
+/* 컨트롤 */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-bottom:var(--s3)}
+.seg button,.btn{
+  font:inherit;font-size:15px;font-weight:700;color:var(--ink);background:transparent;cursor:pointer;
+  border:1.5px solid var(--ink);border-radius:999px;padding:var(--s2) var(--s3);min-height:44px;line-height:1.3;transition:background .2s,color .2s}
+.seg button[aria-pressed="true"],.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2)}
+.row{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s3)}
+.ctl{margin:var(--s3) 0}
+.ctl label,.ctl .lab{display:flex;justify-content:space-between;gap:var(--s3);font-size:15px;font-weight:700;margin-bottom:var(--s1)}
+.ctl output{font-weight:800;color:var(--fat);text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;margin:0;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--ink);border-radius:2px}
+input[type=range]::-moz-range-track{height:4px;background:var(--ink);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-12px;border-radius:50%;background:var(--paper);border:2.5px solid var(--ink);box-shadow:0 2px 0 var(--line)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--paper);border:2.5px solid var(--ink)}
+.ticks{position:relative;height:30px;font-size:12px;color:var(--ink-soft);margin:-4px 14px 0}
+.ticks span{position:absolute;transform:translateX(-50%);text-align:center;white-space:nowrap;line-height:1.2}
+.ticks span::before{content:"";display:block;width:1px;height:6px;background:var(--line);margin:0 auto 2px}
+.meter{margin:var(--s2) 0}
+.meter .lab{display:flex;justify-content:space-between;font-size:14px;margin-bottom:3px}
+.meter .lab em{font-style:normal;font-weight:800}
+.track{height:14px;border:1.5px solid var(--ink);border-radius:7px;overflow:hidden;display:flex;background:rgba(255,255,255,.35)}
+.track i{display:block;height:100%;transition:width .6s cubic-bezier(.3,.8,.3,1)}
+.b-glu{background:var(--glucose)}.b-fat{background:var(--fat)}.b-ket{background:var(--ketone)}.b-mct{background:var(--mct)}.b-sand{background:#cdb98c}.b-ink{background:var(--ink)}
+.modelnote{font-size:13px;color:var(--ink-soft);margin:var(--s2) 0 0}
+
+/* 정정 상자 */
+.fix{
+  margin:var(--s4) 0;padding:var(--s3) var(--s3) var(--s3) var(--s4);position:relative;font-size:15.5px;
+  border-left:3px solid var(--fat);background:rgba(162,67,42,.06)}
+.fix .hd{font-family:var(--hand);font-size:23px;color:var(--fat);line-height:1;display:block;margin-bottom:var(--s1)}
+.fix p:last-child{margin-bottom:0}
+
+/* 계산기 */
+.calc{display:grid;gap:0 var(--s4)}
+.big{font-size:clamp(30px,9vw,42px);font-weight:800;line-height:1.1}
+.big small{font-size:15px;font-weight:700;margin-left:var(--s1)}
+
+/* 정오표 */
+.errata{width:100%;border-collapse:collapse;font-size:15px;margin:var(--s3) 0}
+.errata th,.errata td{padding:var(--s2) var(--s2);border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.errata th{font-size:13px;letter-spacing:.05em;color:var(--ink-soft);border-bottom:1.5px solid var(--ink)}
+.errata td:first-child{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--fat)}
+@media (max-width:520px){
+  .errata,.errata tbody,.errata tr,.errata td{display:block}
+  .errata thead{display:none}
+  .errata tr{padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+  .errata td{border:0;padding:2px 0}
+  .errata td:first-child::before{content:"원문 ";font-size:12px;text-decoration:none;display:inline-block;margin-right:6px;color:var(--fat)}
+  .errata td:last-child::before{content:"정확히는 ";font-size:12px;display:inline-block;margin-right:6px;color:var(--ketone);font-weight:800}
+}
+.script{counter-reset:s;list-style:none;padding:0;margin:var(--s3) 0}
+.script li{counter-increment:s;padding-left:var(--s5);position:relative;margin-bottom:var(--s3)}
+.script li::before{content:counter(s);position:absolute;left:0;top:1px;width:26px;height:26px;border:1.5px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800}
+.caution{font-size:14.5px;color:var(--ink-soft);border-top:1px dashed var(--line);padding-top:var(--s3);margin-top:var(--s5)}
+footer{padding:var(--s5) 0 var(--s6);text-align:center;font-size:13px;color:var(--ink-soft)}
+footer .hand{font-family:var(--hand);font-size:22px;color:var(--fat);display:block;margin-bottom:var(--s1)}
+
+/* 애니메이션 */
+@keyframes flow{0%{transform:translateX(0);opacity:0}12%{opacity:1}82%{opacity:1}100%{transform:translateX(112px);opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+.flow{animation:flow 3.6s linear infinite}
+.bob{animation:bob 2.4s ease-in-out infinite}
+.pulse{animation:pulse 2.2s ease-in-out infinite}
+#needle{transition:transform .9s cubic-bezier(.3,1.35,.5,1)}
+#door{transition:transform .7s cubic-bezier(.3,1.2,.5,1)}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .flow,.bob,.pulse{animation:none}
+  .flow{opacity:1}
+  .particles{display:none}
+  .js .reveal{opacity:1;transform:none;transition:none}
+  #needle,#door,.track i{transition:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="rough" x="-2%" y="-2%" width="104%" height="104%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/>
+    </filter>
+  </defs>
+</svg>
+
+<header class="bar">
+  <div class="wrap">
+    <span class="brand">방탄커피 노트북</span>
+    <nav aria-label="장 이동">
+      <a href="#a1" aria-label="1장 연료 게이지">Ⅰ</a>
+      <a href="#a2" aria-label="2장 인슐린의 문">Ⅱ</a>
+      <a href="#a3" aria-label="3장 간">Ⅲ</a>
+      <a href="#a4" aria-label="4장 뇌">Ⅳ</a>
+      <a href="#a5" aria-label="5장 정직한 한계">Ⅴ</a>
+    </nav>
+  </div>
+  <div class="prog" id="prog"></div>
+</header>
+
+<main>
+<!-- ───────── 서장 ───────── -->
+<section class="hero">
+  <div class="wrap">
+    <svg viewBox="0 0 200 200" class="sketch" role="img" aria-label="정사각형과 원 안에 놓인 커피잔 스케치" fill="none" stroke="#66503a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="20" y="20" width="160" height="160"/>
+      <circle cx="100" cy="100" r="80"/>
+      <line x1="20" y1="100" x2="180" y2="100" stroke-dasharray="3 4" stroke-width="1"/>
+      <line x1="100" y1="20" x2="100" y2="180" stroke-dasharray="3 4" stroke-width="1"/>
+      <g stroke="#3a2a1b" stroke-width="2">
+        <path d="M70 92h60v28a22 22 0 0 1-22 22h-16a22 22 0 0 1-22-22z"/>
+        <path d="M130 100h8a10 10 0 0 1 0 20h-9"/>
+        <ellipse cx="100" cy="146" rx="42" ry="7"/>
+        <path d="M86 82c-6-8 6-12 0-20M100 82c-6-8 6-12 0-20M114 82c-6-8 6-12 0-20" stroke="#a2432a" stroke-width="1.6"/>
+      </g>
+    </svg>
+    <span class="kicker">몸은 속는 게 아니라, 연료를 바꿔 쓴다</span>
+    <h1>방탄커피 속<br>연료 전환 이야기</h1>
+    <p class="thesis">탄수화물이 끊기면 몸은 <b style="color:var(--glucose)">포도당</b> 위주에서 <b style="color:var(--fat)">지방</b>과 <b style="color:var(--ketone)">케톤</b>을 더 많이 쓰는 쪽으로 비율을 옮깁니다. 방탄커피는 그 전환을 <i>돕는</i> 도구이지, 마법 스위치가 아닙니다.</p>
+    <ul class="legend" aria-label="색상 범례">
+      <li><span class="sw" style="background:var(--glucose)"></span>포도당</li>
+      <li><span class="sw" style="background:var(--fat)"></span>지방</li>
+      <li><span class="sw k" style="background:var(--ketone)"></span>케톤체</li>
+      <li><span class="sw" style="background:var(--mct)"></span>MCT 오일</li>
+    </ul>
+    <p class="hint">각 장의 손잡이를 직접 움직여 보세요. 그림은 <b>수치가 아니라 경향</b>을 보여 주는 모식도입니다.</p>
+  </div>
+</section>
+
+<!-- ───────── 1장 ───────── -->
+<section class="act" id="a1">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">I</span>
+      <h2>연료 게이지</h2>
+      <p class="lead">우리 몸은 두 가지 연료를 씁니다. 평소엔 <b style="color:var(--glucose)">포도당</b>이 주연이고, <b style="color:var(--fat)">지방</b>은 조연입니다. 아침 식사를 바꿔서 바늘이 어떻게 움직이는지 보세요.</p>
+    </div>
+    <figure class="plate reveal" id="p1">
+      <span class="tag">도판 Ⅰ · 연료 게이지</span>
+      <div class="seg" role="group" aria-label="아침 식사 선택">
+        <button type="button" data-carb="yes" aria-pressed="true">탄수화물이<br>있는 아침</button>
+        <button type="button" data-carb="no" aria-pressed="false">탄수화물이<br>없는 아침</button>
+      </div>
+      <svg viewBox="0 0 320 200" role="img" aria-label="포도당 쪽과 지방·케톤 쪽을 가리키는 반원 게이지">
+        <defs>
+          <linearGradient id="gFK" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#a2432a"/><stop offset="1" stop-color="#3f6b4a"/>
+          </linearGradient>
+        </defs>
+        <g class="sketch" fill="none" stroke-linecap="round">
+          <path d="M30 160A130 130 0 0 1 160 30" stroke="#2d5f7e" stroke-width="16"/>
+          <path d="M160 30A130 130 0 0 1 290 160" stroke="url(#gFK)" stroke-width="16"/>
+          <path d="M22 160A138 138 0 0 1 298 160" stroke="#3a2a1b" stroke-width="1.2"/>
+        </g>
+        <g id="needle" style="transform-origin:160px 160px;transform:rotate(-52deg)">
+          <line x1="160" y1="160" x2="160" y2="52" stroke="#3a2a1b" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <circle cx="160" cy="160" r="9" fill="#f7efd9" stroke="#3a2a1b" stroke-width="2.5"/>
+        <text x="30" y="188" text-anchor="start" font-size="14" font-weight="800">포도당</text>
+        <text x="290" y="188" text-anchor="end" font-size="14" font-weight="800">지방 · 케톤</text>
+      </svg>
+      <div class="meter"><div class="lab"><span>포도당 비중</span><em id="m1g"></em></div><div class="track"><i class="b-glu" id="f1g"></i></div></div>
+      <div class="meter"><div class="lab"><span>지방 · 케톤 비중</span><em id="m1f"></em></div><div class="track"><i class="b-fat" id="f1f"></i></div></div>
+      <figcaption id="c1" aria-live="polite"></figcaption>
+    </figure>
+    <div class="fix reveal">
+      <span class="hd">비유의 정정</span>
+      <p>“하이브리드 자동차가 전기에서 휘발유로 넘어간다”는 비유는 직관적이지만, 몸은 엔진을 <b>통째로 교체하지 않습니다.</b> 두 연료를 항상 섞어 쓰고, 바늘이 <b>비율을 옮길 뿐</b>입니다. 그래서 위 게이지의 바늘도 끝까지 가지 않습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 2장 ───────── -->
+<section class="act" id="a2">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">II</span>
+      <h2>인슐린의 문</h2>
+      <p class="lead">지방 창고에는 문이 있습니다. 문지기는 <b>인슐린</b>입니다. 탄수화물을 먹어 혈당이 오르면 인슐린이 올라 문을 닫고, 탄수화물이 없으면 문이 열려 지방이 연료로 꺼내집니다.</p>
+    </div>
+    <figure class="plate reveal" id="p2">
+      <span class="tag">도판 Ⅱ · 지방 창고의 문</span>
+      <div class="ctl">
+        <label for="carb"><span>먹은 탄수화물의 양</span><output id="o2" for="carb"></output></label>
+        <input type="range" id="carb" min="0" max="100" step="1" value="0" aria-describedby="c2">
+      </div>
+      <svg viewBox="0 0 320 190" role="img" aria-label="인슐린 수치에 따라 열리고 닫히는 지방 창고의 문">
+        <g class="sketch" fill="none" stroke="#3a2a1b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="176" y="34" width="128" height="124" rx="26" fill="#f1e6c8"/>
+          <path d="M20 96h126" stroke-dasharray="2 7" stroke="#66503a" stroke-width="1.6"/>
+        </g>
+        <g fill="#a2432a" stroke="#3a2a1b" stroke-width="1.3" opacity=".9">
+          <circle cx="212" cy="72" r="12"/><circle cx="244" cy="62" r="13"/><circle cx="276" cy="76" r="11"/>
+          <circle cx="226" cy="104" r="14"/><circle cx="262" cy="108" r="12"/><circle cx="238" cy="138" r="12"/><circle cx="278" cy="136" r="10"/>
+        </g>
+        <g id="drops" fill="#a2432a" stroke="#3a2a1b" stroke-width="1.2" style="opacity:0">
+          <g class="bob"><circle cx="150" cy="86" r="7"/></g>
+          <g class="bob" style="animation-delay:-.8s"><circle cx="112" cy="102" r="7"/></g>
+          <g class="bob" style="animation-delay:-1.6s"><circle cx="74" cy="90" r="7"/></g>
+        </g>
+        <rect id="gap" x="168" y="56" width="16" height="82" fill="#f1e6c8" style="opacity:0"/>
+        <g id="door" style="transform-origin:171px 54px;transform:rotate(0deg)">
+          <rect class="sketch" x="165" y="54" width="12" height="86" rx="3" fill="#66503a" stroke="#3a2a1b" stroke-width="2"/>
+          <g id="lock" fill="none" stroke="#f7efd9" stroke-width="2">
+            <rect x="166" y="93" width="10" height="9" fill="#f7efd9" stroke="none"/><path d="M168 93v-4a3 3 0 0 1 6 0v4"/>
+          </g>
+        </g>
+        <text x="240" y="24" text-anchor="middle" font-size="13" font-weight="800">지방 창고</text>
+        <text x="86" y="126" text-anchor="middle" font-size="12" id="t2out">에너지로 꺼내 씀 →</text>
+        <text x="20" y="176" font-size="12" fill="#66503a">혈액</text>
+      </svg>
+      <div class="meter"><div class="lab"><span>인슐린</span><em id="m2"></em></div><div class="track"><i class="b-ink" id="f2"></i></div></div>
+      <div class="meter"><div class="lab"><span>문이 열린 정도</span><em id="m2d"></em></div><div class="track"><i class="b-fat" id="f2d"></i></div></div>
+      <figcaption id="c2" aria-live="polite"></figcaption>
+    </figure>
+    <div class="fix reveal">
+      <span class="hd">원문의 과장 교정</span>
+      <p>원문의 “인슐린이 거의 0”은 과장입니다. 지방만 섭취하면 인슐린 자극이 <b>매우 작지만 0은 아닙니다.</b> 그래서 손잡이를 맨 왼쪽에 둬도 인슐린 바는 비어 있지 않습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 3장 ───────── -->
+<section class="act" id="a3">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">III</span>
+      <h2>간 — 비상 연료 공장</h2>
+      <p class="lead">간에는 포도당을 쌓아 둔 <b style="color:var(--glucose)">글리코겐 탱크</b>가 있습니다. 탱크가 줄면 간은 지방으로 <b style="color:var(--ketone)">케톤</b>을 만들기 시작합니다. 시간을 흘려보내 보세요.</p>
+    </div>
+    <figure class="plate reveal" id="p3">
+      <span class="tag">도판 Ⅲ · 간의 내부</span>
+      <div class="ctl">
+        <label for="hrs3"><span>마지막 탄수화물 이후</span><output id="o3" for="hrs3"></output></label>
+        <input type="range" id="hrs3" min="0" max="72" step="1" value="12" data-hours aria-describedby="c3">
+        <div class="ticks" aria-hidden="true">
+          <span style="left:0%">직후</span><span style="left:16.67%">12h<br>아침 공복</span><span style="left:33.3%">24h</span><span style="left:66.7%">48h</span><span style="left:100%">72h</span>
+        </div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="coffee" aria-pressed="false">☕ MCT 방탄커피 마시기</button>
+      </div>
+      <svg viewBox="0 0 360 230" role="img" aria-label="장에서 간으로 가는 MCT의 직행로와 림프를 거치는 버터의 우회로, 간 속 글리코겐 탱크와 케톤 생성">
+        <defs>
+          <marker id="arrInk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3a2a1b"/></marker>
+          <marker id="arrGold" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#c08a1e"/></marker>
+          <marker id="arrGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3f6b4a"/></marker>
+          <clipPath id="tankClip"><rect x="216" y="30" width="40" height="70" rx="4"/></clipPath>
+        </defs>
+        <g class="sketch" fill="#f1e6c8" stroke="#3a2a1b" stroke-width="2.2" stroke-linejoin="round">
+          <rect x="8" y="20" width="82" height="76" rx="14"/>
+          <path d="M200 20h110a40 40 0 0 1 40 40v10a40 40 0 0 1-40 40H200a28 28 0 0 1-28-28V48a28 28 0 0 1 28-28z"/>
+          <rect x="230" y="160" width="124" height="58" rx="14"/>
+        </g>
+        <text x="49" y="52" text-anchor="middle" font-size="14" font-weight="800">장</text>
+        <text x="49" y="72" text-anchor="middle" font-size="11">(소화·흡수)</text>
+        <text x="330" y="112" text-anchor="end" font-size="12" font-weight="800">간</text>
+        <text x="292" y="184" text-anchor="middle" font-size="13" font-weight="800">온몸·뇌</text>
+        <text x="292" y="203" text-anchor="middle" font-size="11">연료로 사용</text>
+        <!-- 글리코겐 탱크 -->
+        <rect x="216" y="30" width="40" height="70" rx="4" fill="rgba(255,255,255,.4)"/>
+        <rect id="tank" x="216" y="30" width="40" height="70" fill="#2d5f7e" clip-path="url(#tankClip)" style="transition:y .6s,height .6s"/>
+        <rect class="sketch" x="216" y="30" width="40" height="70" rx="4" fill="none" stroke="#3a2a1b" stroke-width="2.2"/>
+        <text x="236" y="114" text-anchor="middle" font-size="11">글리코겐</text>
+        <!-- 케톤 공장 -->
+        <circle id="kdrop" cx="298" cy="62" r="8" fill="#3f6b4a" stroke="#3a2a1b" stroke-width="1.6" style="transition:r .6s"/>
+        <text x="298" y="98" text-anchor="middle" font-size="11">케톤 생산</text>
+        <!-- 경로 -->
+        <path id="pMCT" d="M90 40H196" fill="none" stroke="#3a2a1b" stroke-width="3" marker-end="url(#arrInk)" style="transition:stroke .3s,stroke-width .3s"/>
+        <path id="pLCT" d="M90 78C134 78 118 190 160 190H226" fill="none" stroke="#3a2a1b" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#arrInk)"/>
+        <path d="M298 76V152" fill="none" stroke="#3f6b4a" stroke-width="3" marker-end="url(#arrGreen)"/>
+        <text x="143" y="30" text-anchor="middle" font-size="12" font-weight="800">MCT · 직행</text>
+        <text x="143" y="215" text-anchor="middle" font-size="11">버터(긴사슬): 림프·혈액 우회</text>
+        <!-- 입자 -->
+        <g class="particles" id="parts" style="display:none">
+          <circle r="5.5" fill="#c08a1e" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="1.8s" repeatCount="indefinite" begin="0s"><mpath href="#pMCT"/></animateMotion></circle>
+          <circle r="5.5" fill="#c08a1e" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="1.8s" repeatCount="indefinite" begin="0.6s"><mpath href="#pMCT"/></animateMotion></circle>
+          <circle r="5.5" fill="#c08a1e" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="1.8s" repeatCount="indefinite" begin="1.2s"><mpath href="#pMCT"/></animateMotion></circle>
+          <circle r="5" fill="#e3cf94" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="6s" repeatCount="indefinite" begin="0s"><mpath href="#pLCT"/></animateMotion></circle>
+          <circle r="5" fill="#e3cf94" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="6s" repeatCount="indefinite" begin="2s"><mpath href="#pLCT"/></animateMotion></circle>
+          <circle r="5" fill="#e3cf94" stroke="#3a2a1b" stroke-width="1.2"><animateMotion dur="6s" repeatCount="indefinite" begin="4s"><mpath href="#pLCT"/></animateMotion></circle>
+        </g>
+      </svg>
+      <div class="meter"><div class="lab"><span>간의 글리코겐 탱크</span><em id="m3g"></em></div><div class="track"><i class="b-glu" id="f3g"></i></div></div>
+      <div class="meter"><div class="lab"><span>케톤 생산 <small style="font-weight:400">(<span style="color:var(--ketone)">■</span> 몸 스스로 · <span style="color:var(--mct)">■</span> MCT가 얹은 몫)</small></span><em id="m3k"></em></div><div class="track"><i class="b-ket" id="f3k"></i><i class="b-mct" id="f3m"></i></div></div>
+      <p class="modelnote">모식도입니다. 탱크가 줄어드는 속도와 케톤 상승은 사람마다 크게 다릅니다.</p>
+      <figcaption id="c3" aria-live="polite"></figcaption>
+    </figure>
+    <div class="fix reveal">
+      <span class="hd">지름길의 정체</span>
+      <p><b>MCT</b>(중쇄지방)는 장에서 문맥정맥을 타고 <b>간으로 곧장</b> 들어가 빠르게 케톤으로 바뀝니다. 반면 버터 같은 긴사슬 지방은 림프와 혈액을 돌아 느리게 갑니다. 다만 MCT 한 잔이 올리는 케톤은 <b>몇 시간 이어지는 일시적 상승</b>(개인차 있음)입니다. 전환 스위치는 <b>공복 시간과 탄수화물 제한</b>이고, MCT는 그 전환을 <b>보조하는 마중물</b>입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 4장 ───────── -->
+<section class="act" id="a4">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">IV</span>
+      <h2>뇌 — 까다로운 손님</h2>
+      <p class="lead">뇌는 <b>혈뇌장벽</b>이라는 엄격한 문을 통과한 연료만 씁니다. 포도당과 케톤은 각자의 전용 통로가 있습니다. 시간이 갈수록 케톤 손님이 늘어나는 모습을 보세요.</p>
+    </div>
+    <figure class="plate reveal" id="p4">
+      <span class="tag">도판 Ⅳ · 혈뇌장벽</span>
+      <div class="ctl">
+        <label for="hrs4"><span>마지막 탄수화물 이후</span><output id="o4" for="hrs4"></output></label>
+        <input type="range" id="hrs4" min="0" max="72" step="1" value="12" data-hours aria-describedby="c4">
+        <div class="ticks" aria-hidden="true">
+          <span style="left:0%">직후</span><span style="left:16.67%">12h</span><span style="left:33.3%">24h</span><span style="left:66.7%">48h</span><span style="left:100%">72h</span>
+        </div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="long" aria-pressed="false">수 주간 적응한 상태 보기</button>
+      </div>
+      <svg viewBox="0 0 340 190" role="img" aria-label="혈관 속 포도당과 케톤이 혈뇌장벽을 지나 뇌세포로 들어가는 그림">
+        <g class="sketch" fill="#f1e6c8" stroke="#3a2a1b" stroke-width="2.2" stroke-linejoin="round">
+          <rect x="6" y="30" width="130" height="130" rx="18" fill="rgba(162,67,42,.10)"/>
+          <rect x="188" y="30" width="146" height="130" rx="26"/>
+        </g>
+        <g class="sketch" stroke="#3a2a1b" stroke-width="2.2" fill="#66503a">
+          <rect x="144" y="26" width="36" height="46" rx="4"/>
+          <rect x="144" y="118" width="36" height="46" rx="4"/>
+        </g>
+        <rect x="150" y="76" width="24" height="12" fill="#f7efd9" stroke="#2d5f7e" stroke-width="2"/>
+        <rect x="150" y="98" width="24" height="12" fill="#f7efd9" stroke="#3f6b4a" stroke-width="2"/>
+        <text x="71" y="20" text-anchor="middle" font-size="13" font-weight="800">혈액</text>
+        <text x="161" y="182" text-anchor="middle" font-size="11">혈뇌장벽</text>
+        <text x="261" y="20" text-anchor="middle" font-size="13" font-weight="800">뇌세포</text>
+        <g id="blood"></g>
+        <g id="cell"></g>
+      </svg>
+      <div class="meter"><div class="lab"><span>뇌가 쓰는 연료</span><em id="m4"></em></div><div class="track"><i class="b-glu" id="f4g"></i><i class="b-ket" id="f4k"></i></div></div>
+      <p class="modelnote"><span style="color:var(--glucose)">●</span> 포도당 · <span style="color:var(--ketone)">◆</span> 케톤체. 모식도입니다.</p>
+      <figcaption id="c4" aria-live="polite"></figcaption>
+    </figure>
+    <div class="fix reveal">
+      <span class="hd">원문의 과장 교정</span>
+      <p>“포도당만 쓰던 뇌가 케톤을 쓴다”에서 뇌가 <b>포도당을 끊는다</b>고 읽으면 틀립니다. 케톤이 아무리 늘어도 뇌는 포도당을 계속 씁니다. 부족분은 간이 아미노산 등으로 <b>새로 만들어(당신생합성) 채웁니다.</b> 또 “가짜 허기를 차단한다”는 말은 <b>식욕이 줄 수 있다는 보고가 있지만 근거가 제한적이고 개인차가 큽니다.</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 5장 ───────── -->
+<section class="act" id="a5">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">V</span>
+      <h2>정직한 한계 — 열량 수지</h2>
+      <p class="lead">여기까지는 “연료의 <b>종류</b>”가 바뀌는 이야기였습니다. 체지방이 줄어드는 조건은 “연료의 <b>총량</b>”에 달려 있습니다. 방탄커피 속 지방도 <b>이미 몸에 들어온 에너지</b>이고, 몸은 그 지방부터 태웁니다.</p>
+    </div>
+    <figure class="plate reveal" id="p5">
+      <span class="tag">도판 Ⅴ · 하루의 에너지 장부</span>
+      <div class="ctl">
+        <label for="tdee"><span>하루 소비 열량</span><output id="o5t" for="tdee"></output></label>
+        <input type="range" id="tdee" min="1200" max="3500" step="50" value="2000">
+      </div>
+      <div class="ctl">
+        <label for="butter"><span>방탄커피 속 버터</span><output id="o5b" for="butter"></output></label>
+        <input type="range" id="butter" min="0" max="4" step="1" value="2">
+      </div>
+      <div class="ctl">
+        <label for="mct"><span>방탄커피 속 MCT 오일</span><output id="o5m" for="mct"></output></label>
+        <input type="range" id="mct" min="0" max="3" step="1" value="1">
+      </div>
+      <div class="ctl">
+        <label for="meals"><span>그 외 식사 열량</span><output id="o5e" for="meals"></output></label>
+        <input type="range" id="meals" min="0" max="2500" step="50" value="1200">
+      </div>
+      <div class="meter"><div class="lab"><span>섭취 <small style="font-weight:400">(<span style="color:var(--mct)">■</span> 방탄커피 · <span style="color:#a8935f">■</span> 식사)</small></span><em id="m5i"></em></div><div class="track"><i class="b-mct" id="f5c"></i><i class="b-sand" id="f5e"></i></div></div>
+      <div class="meter"><div class="lab"><span>소비</span><em id="m5o"></em></div><div class="track"><i class="b-ink" id="f5o"></i></div></div>
+      <div class="big" id="big" aria-live="polite"></div>
+      <figcaption id="c5" aria-live="polite"></figcaption>
+    </figure>
+    <p class="modelnote">버터 1큰술≈100kcal, MCT 오일 1큰술≈115kcal로 어림했습니다. 체지방 1kg≈7,700kcal는 흔히 쓰는 대략의 기준이며, 실제 체중은 수분·근육·개인 대사에 따라 달라집니다.</p>
+  </div>
+</section>
+
+<!-- ───────── 결 ───────── -->
+<section class="act" id="a6">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="no">결</span>
+      <h2>30초 설명 스크립트</h2>
+      <p class="lead">이 노트를 보고 누군가에게 설명한다면, 이 순서면 충분합니다.</p>
+      <ol class="script" id="script">
+        <li><b>탄수화물이 없으면 인슐린이 낮아져서,</b> 몸이 지방을 ‘저장’하는 모드에서 ‘꺼내 쓰는’ 모드로 비율을 옮겨요.</li>
+        <li><b>간의 포도당 저장분이 줄면,</b> 간이 지방으로 케톤을 만들어 뇌 같은 곳에 연료로 보내요. 이건 속임수가 아니라 원래 있는 정상적인 기능이에요.</li>
+        <li><b>방탄커피의 MCT는 간으로 바로 가서</b> 케톤으로 잘 바뀌는 지름길이라, 전환되는 동안 허기를 달래는 데 도움이 될 수 있어요.</li>
+        <li><b>하지만 커피 속 지방도 열량이에요.</b> 하루 전체 섭취가 소비보다 적어야 체지방이 줄어요.</li>
+      </ol>
+      <div class="row"><button type="button" class="btn" id="copy">스크립트 복사</button><span id="copied" role="status" style="align-self:center;font-size:14px;color:var(--ketone)"></span></div>
+    </div>
+
+    <div class="reveal">
+      <h3 style="font-size:20px;margin-top:var(--s5)">정오표 — 원문에서 바로잡은 곳</h3>
+      <table class="errata">
+        <thead><tr><th>원문</th><th>정확히는</th></tr></thead>
+        <tbody>
+          <tr><td>인슐린이 거의 0에 가깝다</td><td>인슐린이 <b>최소화</b>된다(0은 아님)</td></tr>
+          <tr><td>방탄커피가 케톤 스위치를 켠다</td><td>스위치는 <b>공복 시간·탄수화물 제한</b>. MCT는 <b>일시적 케톤 상승으로 보조</b></td></tr>
+          <tr><td>뇌가 포도당 대신 케톤을 쓴다</td><td>뇌는 <b>둘을 섞어 쓰며</b>, 포도당은 간이 새로 만들어 공급</td></tr>
+          <tr><td>가짜 허기를 차단한다</td><td>허기 완화 가능성은 있으나 <b>근거 제한적·개인차 큼</b></td></tr>
+          <tr><td>몸을 속여 / 강제 전환</td><td>속임수가 아닌 <b>정상 대사 기능</b>(대사 유연성)</td></tr>
+          <tr><td>(누락)</td><td>방탄커피 자체가 <b>수백 kcal</b>이며 체지방 감소는 <b>총 열량 수지</b>에 달림</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="caution reveal">이 페이지는 일반적인 생리학 개념을 쉽게 풀어 쓴 교육용 자료이며 의학적 조언이 아닙니다. 당뇨(특히 약·인슐린 사용 중), 임신·수유, 간·담낭·췌장 질환, 섭식장애가 있거나 지질 수치가 높은 분은 시도 전에 의료진과 상담하세요. 버터가 많이 든 방식은 포화지방 섭취가 늘 수 있습니다.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <span class="hand">Saper vedere — 보는 법을 안다는 것</span>
+  <div>방탄커피 노트북 · 모식도는 경향을 보여 주며 개인차가 있습니다</div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+  var root = document.documentElement;
+  root.classList.add('js');
+  var $ = function(id){ return document.getElementById(id); };
+  var NS = 'http://www.w3.org/2000/svg';
+  var clamp = function(v,a,b){ return Math.max(a, Math.min(b, v)); };
+  var pct = function(v){ return (clamp(v,0,1)*100).toFixed(1) + '%'; };
+  var fmt = function(n){ return Math.round(n).toLocaleString('ko-KR'); };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ───── 스크롤: 진행바·현재 장·등장 효과 ───── */
+  var prog = $('prog');
+  var navLinks = [].slice.call(document.querySelectorAll('.bar nav a'));
+  var acts = ['a1','a2','a3','a4','a5'].map($);
+  function onScroll(){
+    var h = document.documentElement.scrollHeight - innerHeight;
+    prog.style.width = (h > 0 ? scrollY / h * 100 : 0) + '%';
+    var cur = -1;
+    acts.forEach(function(el,i){ if (el.getBoundingClientRect().top < innerHeight * 0.4) cur = i; });
+    navLinks.forEach(function(a,i){ a.classList.toggle('on', i === cur); });
+  }
+  addEventListener('scroll', onScroll, {passive:true});
+  addEventListener('resize', onScroll);
+  onScroll();
+  var revs = [].slice.call(document.querySelectorAll('.reveal'));
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, {threshold:0.12});
+    revs.forEach(function(r){ io.observe(r); });
+  } else { revs.forEach(function(r){ r.classList.add('in'); }); }
+
+  /* ───── Ⅰ 연료 게이지 ───── */
+  var carb = 'yes';
+  function render1(){
+    var yes = carb === 'yes';
+    $('needle').style.transform = 'rotate(' + (yes ? -52 : 30) + 'deg)';
+    $('f1g').style.width = pct(yes ? 0.85 : 0.5);
+    $('f1f').style.width = pct(yes ? 0.15 : 0.5);
+    $('m1g').textContent = yes ? '주연' : '줄어듦';
+    $('m1f').textContent = yes ? '조연' : '늘어남';
+    $('c1').textContent = yes
+      ? '포도당이 주연료입니다. 인슐린이 높아 지방은 저장 쪽으로 기웁니다.'
+      : '인슐린이 낮아져 지방과 케톤의 비중이 올라갑니다. 바늘은 끝까지 가지 않습니다. 포도당도 계속 함께 쓰입니다.';
+  }
+  [].forEach.call(document.querySelectorAll('#p1 [data-carb]'), function(b){
+    b.addEventListener('click', function(){
+      carb = b.dataset.carb;
+      [].forEach.call(document.querySelectorAll('#p1 [data-carb]'), function(x){
+        x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+      });
+      render1();
+    });
+  });
+
+  /* ───── Ⅱ 인슐린의 문 ───── */
+  function render2(){
+    var c = +$('carb').value;
+    var insulin = 0.04 + 0.96 * (c / 100);      // 0이 아닌 바닥값
+    var open = 1 - insulin;
+    var word = c < 8 ? '없음 (방탄커피만)' : c < 35 ? '적음' : c < 70 ? '보통' : '많음';
+    $('o2').textContent = word;
+    $('door').style.transform = 'rotate(' + (open * 72).toFixed(1) + 'deg)';
+    $('gap').style.opacity = clamp(open * 1.5, 0, 1);
+    $('lock').style.opacity = clamp(1 - open * 1.6, 0, 1);
+    $('drops').style.opacity = clamp((open - 0.25) / 0.5, 0, 1);
+    $('t2out').style.opacity = clamp((open - 0.25) / 0.5, 0, 1);
+    $('f2').style.width = pct(insulin);
+    $('f2d').style.width = pct(open);
+    $('m2').textContent = insulin < 0.15 ? '최소 (0은 아님)' : insulin < 0.45 ? '낮음' : insulin < 0.75 ? '높아짐' : '높음';
+    $('m2d').textContent = open > 0.8 ? '활짝' : open > 0.5 ? '절반 이상' : open > 0.2 ? '살짝' : '닫힘';
+    $('c2').textContent = insulin < 0.15
+      ? '인슐린이 낮아 문이 활짝 열렸습니다. 지방이 혈액으로 나와 연료로 쓰입니다.'
+      : insulin < 0.6
+        ? '인슐린이 오르면서 문이 좁아집니다. 지방 꺼내기가 줄어듭니다.'
+        : '인슐린이 높아 문이 닫혔습니다. 몸은 지방을 쌓는 쪽으로 기웁니다.';
+  }
+  $('carb').addEventListener('input', render2);
+
+  /* ───── Ⅲ·Ⅳ 시간 축(공유) ───── */
+  var hours = 12, coffee = false, longterm = false;
+  var level = function(h){ return Math.exp(-h / 14); };            // 글리코겐 탱크(모식)
+  var ketBase = function(h){ return Math.pow(1 - level(h), 3); };  // 몸 스스로의 케톤 생산(모식)
+  var MCT_BUMP = 0.25;
+  var hLabel = function(h){ return h === 0 ? '방금 먹은 직후' : h + '시간 후'; };
+  var glyWord = function(l){ return l > 0.75 ? '가득' : l > 0.35 ? '절반 안팎' : l > 0.12 ? '적음' : '바닥 근처'; };
+
+  function render3(){
+    var l = level(hours), kb = ketBase(hours), km = coffee ? Math.min(MCT_BUMP, 1 - kb) : 0;
+    var th = 70 * l;
+    $('tank').setAttribute('y', (100 - th).toFixed(1));
+    $('tank').setAttribute('height', th.toFixed(1));
+    $('kdrop').setAttribute('r', (8 + 12 * Math.min(1, kb + km)).toFixed(1));
+    $('f3g').style.width = pct(l);
+    $('f3k').style.width = pct(kb);
+    $('f3m').style.width = pct(km);
+    $('m3g').textContent = glyWord(l);
+    var kt = kb + km;
+    $('m3k').textContent = kt < 0.1 ? '거의 없음' : kt < 0.35 ? '조금' : kt < 0.65 ? '꽤 있음' : '활발';
+    $('o3').textContent = hLabel(hours);
+    var mc = $('pMCT');
+    mc.setAttribute('stroke', coffee ? '#c08a1e' : '#3a2a1b');
+    mc.setAttribute('stroke-width', coffee ? '5' : '3');
+    mc.setAttribute('marker-end', coffee ? 'url(#arrGold)' : 'url(#arrInk)');
+    $('parts').style.display = coffee ? '' : 'none';
+    var t = hours === 0
+      ? '방금 탄수화물을 먹었습니다. 탱크가 가득 차 있어 간은 케톤을 거의 만들 필요가 없습니다.'
+      : '탱크는 ' + glyWord(l) + ' 상태입니다. ' + (kb < 0.1 ? '아직 몸 스스로 만드는 케톤은 거의 없습니다.' : '탱크가 줄수록 간이 지방으로 케톤을 더 만듭니다.');
+    if (coffee) t += ' 방금 마신 MCT는 직행로로 간에 도착해 케톤이 일시적으로 올라갑니다(금색 몫). 몸 전체의 전환이 끝난 것은 아닙니다.';
+    $('c3').textContent = t;
+  }
+
+  /* ───── Ⅳ 혈뇌장벽 ───── */
+  var N = 20;
+  var spots = [];
+  (function(){ for (var i = 0; i < N; i++) spots.push({ r: i % 5, c: Math.floor(i / 5) }); })();
+  function mk(type, x, y){
+    var g = document.createElementNS(NS, 'g');
+    g.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+    var s;
+    if (type === 'g') {
+      s = document.createElementNS(NS, 'circle');
+      s.setAttribute('r', '6'); s.setAttribute('fill', '#2d5f7e');
+    } else {
+      s = document.createElementNS(NS, 'path');
+      s.setAttribute('d', 'M0 -7L7 0L0 7L-7 0Z'); s.setAttribute('fill', '#3f6b4a');
+    }
+    s.setAttribute('stroke', '#3a2a1b'); s.setAttribute('stroke-width', '1.3');
+    g.appendChild(s);
+    return {g:g, s:s};
+  }
+  function render4(){
+    var frac = longterm ? 0.6 : 0.3 * (1 - Math.exp(-hours / 36));
+    var kc = Math.round(frac * N);
+    var blood = $('blood'), cell = $('cell');
+    blood.textContent = ''; cell.textContent = '';
+    spots.forEach(function(p, i){
+      // 케톤은 일정 간격으로 섞어 배치
+      var isK = kc > 0 && Math.floor((i + 1) * kc / N) > Math.floor(i * kc / N);
+      var by = 48 + p.r * 22, bx = 18 + p.c * 6;
+      var b = mk(isK ? 'k' : 'g', bx, by);
+      b.s.setAttribute('class', 'flow');
+      b.s.style.animationDelay = (-(i * 0.37) % 3.6).toFixed(2) + 's';
+      blood.appendChild(b.g);
+      var c = mk(isK ? 'k' : 'g', 214 + p.c * 28, 54 + p.r * 22);
+      c.s.setAttribute('class', 'pulse');
+      c.s.style.animationDelay = (-(i * 0.23)).toFixed(2) + 's';
+      cell.appendChild(c.g);
+    });
+    var gk = kc / N;
+    $('f4g').style.width = pct(1 - gk);
+    $('f4k').style.width = pct(gk);
+    $('m4').textContent = kc === 0 ? '포도당 위주' : gk < 0.4 ? '포도당 + 케톤 일부' : '포도당 + 케톤 상당';
+    $('o4').textContent = longterm ? '수 주간 적응' : hLabel(hours);
+    $('c4').textContent = longterm
+      ? '탄수화물 제한이 수 주 이어지면 케톤이 뇌 에너지의 절반 이상을 맡을 수 있습니다. 그래도 포도당은 0이 되지 않고, 간이 새로 만들어 공급합니다.'
+      : kc === 0
+        ? '아직은 포도당이 거의 전부입니다. 케톤 통로는 열려 있지만 혈액에 케톤이 적습니다.'
+        : '혈액의 케톤이 늘면서 뇌가 케톤을 함께 쓰기 시작합니다. 하루 이틀 단위에서는 케톤이 아직 일부이고, 포도당이 여전히 주연료입니다.';
+  }
+
+  function setHours(h, from){
+    hours = +h;
+    [].forEach.call(document.querySelectorAll('input[data-hours]'), function(i){ if (i !== from) i.value = hours; });
+    render3();
+    render4();
+  }
+  [].forEach.call(document.querySelectorAll('input[data-hours]'), function(i){
+    i.addEventListener('input', function(){
+      if (longterm) { longterm = false; $('long').setAttribute('aria-pressed', 'false'); }
+      setHours(i.value, i);
+    });
+  });
+  $('coffee').addEventListener('click', function(){
+    coffee = !coffee;
+    this.setAttribute('aria-pressed', coffee ? 'true' : 'false');
+    this.textContent = coffee ? '☕ MCT 방탄커피 마시는 중' : '☕ MCT 방탄커피 마시기';
+    render3();
+  });
+  $('long').addEventListener('click', function(){
+    longterm = !longterm;
+    this.setAttribute('aria-pressed', longterm ? 'true' : 'false');
+    render4();
+  });
+
+  /* ───── Ⅴ 열량 수지 ───── */
+  function render5(){
+    var tdee = +$('tdee').value, b = +$('butter').value, m = +$('mct').value, meals = +$('meals').value;
+    var cof = b * 100 + m * 115, intake = cof + meals, bal = intake - tdee;
+    $('o5t').textContent = fmt(tdee) + ' kcal';
+    $('o5b').textContent = b + '큰술';
+    $('o5m').textContent = m + '큰술';
+    $('o5e').textContent = fmt(meals) + ' kcal';
+    var max = Math.max(tdee, intake, 1) * 1.05;
+    $('f5c').style.width = pct(cof / max);
+    $('f5e').style.width = pct(meals / max);
+    $('f5o').style.width = pct(tdee / max);
+    $('m5i').textContent = fmt(intake) + ' kcal (커피 ' + fmt(cof) + ')';
+    $('m5o').textContent = fmt(tdee) + ' kcal';
+    var kg = Math.abs(bal) * 7 / 7700;
+    var big = $('big');
+    if (Math.abs(bal) < 25) {
+      big.innerHTML = '수지 ≈ 0<small>kcal/일</small>';
+      big.style.color = 'var(--ink)';
+      $('c5').textContent = '들어온 만큼 쓰는 상태입니다. 연료의 종류가 지방 쪽으로 바뀌어도 체지방은 거의 변하지 않습니다.';
+    } else if (bal < 0) {
+      big.innerHTML = '−' + fmt(-bal) + '<small>kcal/일 부족</small>';
+      big.style.color = 'var(--ketone)';
+      $('c5').textContent = '부족한 ' + fmt(-bal) + ' kcal를 몸이 체지방으로 메웁니다. 이 상태가 일주일 이어지면 이론상 체지방 약 ' + kg.toFixed(1) + 'kg에 해당합니다. 감량의 열쇠는 방탄커피 자체가 아니라 이 부족분입니다.';
+    } else {
+      big.innerHTML = '+' + fmt(bal) + '<small>kcal/일 초과</small>';
+      big.style.color = 'var(--fat)';
+      $('c5').textContent = '소비보다 ' + fmt(bal) + ' kcal 더 들어옵니다. 케톤 대사 중이어도 이 상태가 이어지면 이론상 일주일에 체지방 약 ' + kg.toFixed(1) + 'kg이 쌓일 수 있습니다.';
+    }
+  }
+  ['tdee','butter','mct','meals'].forEach(function(id){ $(id).addEventListener('input', render5); });
+
+  /* ───── 스크립트 복사 ───── */
+  $('copy').addEventListener('click', function(){
+    var text = [].map.call(document.querySelectorAll('#script li'), function(li, i){
+      return (i + 1) + '. ' + li.textContent.replace(/\s+/g, ' ').trim();
+    }).join('\n');
+    var done = function(msg){ $('copied').textContent = msg; setTimeout(function(){ $('copied').textContent = ''; }, 2500); };
+    try {
+      navigator.clipboard.writeText(text).then(function(){ done('복사했습니다'); }, function(){ done('복사하지 못했습니다'); });
+    } catch (e) { done('복사하지 못했습니다'); }
+  });
+
+  /* ───── 초기화 ───── */
+  render1(); render2(); render5(); setHours(12);
+  if (reduce) {
+    [].forEach.call(document.querySelectorAll('svg'), function(s){ if (s.pauseAnimations) s.pauseAnimations(); });
+  }
+})();
+</script>
+</body>
+</html>
