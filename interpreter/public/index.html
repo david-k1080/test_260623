@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live Interpreter</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --txt:#f1f5f9; --dim:#94a3b8; --acc:#6366f1; --me:#312e81; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font-family:-apple-system,"Noto Sans KR",system-ui,sans-serif; }
+  .hide { display:none !important; }
+  #join { max-width:420px; margin:0 auto; padding:max(24px,env(safe-area-inset-top)) 20px 24px; display:flex; flex-direction:column; gap:14px; min-height:100%; justify-content:center; }
+  h1 { margin:0 0 6px; font-size:24px; }
+  label { font-size:13px; color:var(--dim); }
+  input,select,button { font:inherit; font-size:17px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--txt); padding:14px; width:100%; }
+  button.primary { background:var(--acc); border-color:var(--acc); font-weight:600; }
+  #app { display:flex; flex-direction:column; height:100dvh; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:max(10px,env(safe-area-inset-top)) 16px 10px; border-bottom:1px solid var(--line); font-size:13px; color:var(--dim); }
+  header b { color:var(--txt); }
+  #feed { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+  .msg .who { font-size:12px; color:var(--dim); margin-bottom:3px; }
+  .msg .bubble { background:var(--card); border-radius:14px; padding:12px 14px; font-size:var(--fs,22px); line-height:1.45; width:fit-content; max-width:92%; }
+  .msg.self { align-items:flex-end; display:flex; flex-direction:column; }
+  .msg.self .bubble { background:var(--me); }
+  #interim { min-height:28px; padding:4px 16px; color:var(--dim); font-size:15px; font-style:italic; }
+  footer { padding:10px 16px max(14px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); display:flex; gap:10px; align-items:center; }
+  #mic { flex:1; padding:18px; font-weight:700; font-size:18px; }
+  #mic.on { background:#dc2626; border-color:#dc2626; animation:pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity:.75; } }
+  .sz { width:54px; padding:14px 0; }
+  #status { font-size:12px; }
+</style>
+</head>
+<body>
+
+<div id="join">
+  <h1>🌐 Live Interpreter</h1>
+  <div><label>방 코드 / Room code</label><input id="room" value="MEET" autocapitalize="characters"></div>
+  <div><label>이름 / Name</label><input id="name" placeholder="예: 김대표 / John"></div>
+  <div><label>내 언어 / My language</label>
+    <select id="lang"><option value="ko">한국어 (Korean)</option><option value="en">English</option></select></div>
+  <button class="primary" id="go">입장 / Join</button>
+  <div id="warn" style="color:#fbbf24;font-size:13px"></div>
+</div>
+
+<div id="app" class="hide">
+  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span id="status">●</span></header>
+  <div id="feed"></div>
+  <div id="interim"></div>
+  <footer>
+    <button class="sz" id="smaller">A−</button>
+    <button id="mic">🎤 말하기 시작</button>
+    <button class="sz" id="bigger">A+</button>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const I18N = {
+  ko: { start:'🎤 말하기 시작', stop:'⏹ 듣는 중 (누르면 중지)', me:'나', trans:'(번역)' },
+  en: { start:'🎤 Start speaking', stop:'⏹ Listening (tap to stop)', me:'Me', trans:'(translated)' }
+};
+let ws, me = {}, rec, micOn = false, wake, fs = 22;
+
+// 저장된 값 복원
+try { const s = JSON.parse(localStorage.getItem('li') || '{}');
+  if (s.name) $('name').value = s.name; if (s.lang) $('lang').value = s.lang; if (s.room) $('room').value = s.room; } catch {}
+const qr = new URLSearchParams(location.search).get('room'); if (qr) $('room').value = qr;
+if (!SR) $('warn').textContent = '⚠ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome(안드로이드) 또는 Safari(iOS)를 사용하세요. / Use Chrome (Android) or Safari (iOS).';
+
+$('go').onclick = () => {
+  me = { room:$('room').value.trim() || 'MEET', name:$('name').value.trim() || 'Guest', lang:$('lang').value };
+  localStorage.setItem('li', JSON.stringify(me));
+  $('join').classList.add('hide'); $('app').classList.remove('hide');
+  $('mic').textContent = I18N[me.lang].start;
+  connect();
+};
+
+function connect() {
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => { $('status').style.color = '#22c55e'; ws.send(JSON.stringify({ type:'join', ...me })); };
+  ws.onclose = () => { $('status').style.color = '#ef4444'; setTimeout(connect, 1500); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'joined') $('rcode').textContent = m.room;
+    if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
+    if (m.type === 'caption') addCaption(m);
+  };
+}
+
+function addCaption(m) {
+  const el = document.createElement('div');
+  el.className = 'msg' + (m.self ? ' self' : '');
+  const who = document.createElement('div'); who.className = 'who';
+  who.textContent = m.self ? I18N[me.lang].me : m.name + (m.original ? '' : ' ' + I18N[me.lang].trans);
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = m.text;
+  el.append(who, b); $('feed').append(el);
+  $('feed').scrollTop = $('feed').scrollHeight;
+}
+
+// ---- 음성 인식 ----
+function startRec() {
+  if (!SR) return alert('음성 인식 미지원 브라우저');
+  rec = new SR();
+  rec.lang = me.lang === 'ko' ? 'ko-KR' : 'en-US';
+  rec.continuous = true; rec.interimResults = true;
+  rec.onresult = ev => {
+    let interim = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const r = ev.results[i];
+      if (r.isFinal) {
+        const text = r[0].transcript.trim();
+        if (text && ws.readyState === 1) ws.send(JSON.stringify({ type:'utterance', text, id: Date.now() + '' }));
+        $('interim').textContent = '';
+      } else interim += r[0].transcript;
+    }
+    if (interim) $('interim').textContent = '… ' + interim;
+  };
+  rec.onend = () => { if (micOn) try { rec.start(); } catch {} };   // 끊기면 자동 재시작
+  rec.onerror = e => { if (e.error === 'not-allowed') { micOn = false; setMic(false); alert('마이크 권한을 허용해주세요 / Allow microphone'); } };
+  rec.start();
+}
+async function setMic(on) {
+  micOn = on; $('mic').classList.toggle('on', on);
+  $('mic').textContent = on ? I18N[me.lang].stop : I18N[me.lang].start;
+  if (on) { startRec(); try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
+  else { rec?.stop(); $('interim').textContent = ''; wake?.release?.(); }
+}
+$('mic').onclick = () => setMic(!micOn);
+$('bigger').onclick = () => { fs = Math.min(40, fs + 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
+$('smaller').onclick = () => { fs = Math.max(14, fs - 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
+</script>
+</body>
+</html>

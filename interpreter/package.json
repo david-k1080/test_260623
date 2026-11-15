@@ -1,0 +1,11 @@
+{
+  "name": "meeting-interpreter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "ws": "^8.18.0"
+  }
+}
