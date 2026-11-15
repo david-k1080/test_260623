@@ -44,7 +44,7 @@
 </div>
 
 <div id="app" class="hide">
-  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span id="status">●</span></header>
+  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span><button id="dl" title="회의록 저장 / Save minutes" style="width:auto;padding:4px 10px;font-size:15px;margin-right:8px">💾</button><span id="status">●</span></span></header>
   <div id="feed"></div>
   <div id="interim"></div>
   <footer>
@@ -89,6 +89,12 @@ function connect() {
     if (m.type === 'stt_error') { alert(m.message); setMic(false); }
     if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
     if (m.type === 'caption') addCaption(m);
+    if (m.type === 'minutes') {
+      if (!m.count) return alert(me.lang === 'ko' ? '아직 저장할 대화가 없습니다.' : 'No conversation to save yet.');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([m.text], { type: 'text/markdown;charset=utf-8' }));
+      a.download = m.filename; document.body.append(a); a.click(); a.remove();
+    }
   };
 }
 
@@ -176,6 +182,7 @@ async function setMic(on) {
   }
 }
 $('mic').onclick = () => setMic(!micOn);
+$('dl').onclick = () => ws.readyState === 1 && ws.send(JSON.stringify({ type: 'get_minutes' }));
 $('bigger').onclick = () => { fs = Math.min(40, fs + 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
 $('smaller').onclick = () => { fs = Math.max(14, fs - 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
 </script>
