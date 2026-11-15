@@ -44,10 +44,18 @@
 </div>
 
 <div id="app" class="hide">
-  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span><button id="dl" title="회의록 저장 / Save minutes" style="width:auto;padding:4px 10px;font-size:15px;margin-right:8px">💾</button><span id="status">●</span></span></header>
+  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span><button id="sum" title="요약 / Summary" style="width:auto;padding:4px 10px;font-size:15px;margin-right:6px">📝</button><button id="dl" title="회의록 저장 / Save minutes" style="width:auto;padding:4px 10px;font-size:15px;margin-right:8px">💾</button><span id="status">●</span></span></header>
   <div id="feed"></div>
   <div id="interim"></div>
-  <footer>
+  <div id="ov" class="hide" style="position:fixed;inset:0;background:var(--bg);z-index:10;display:flex;flex-direction:column">
+  <div style="display:flex;gap:8px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;border-bottom:1px solid var(--line)">
+    <button id="ovsave" style="flex:1;padding:12px">💾 저장 / Save</button>
+    <button id="ovcopy" style="flex:1;padding:12px">📋 복사 / Copy</button>
+    <button id="ovclose" style="flex:1;padding:12px">✕ 닫기 / Close</button>
+  </div>
+  <pre id="ovtext" style="flex:1;overflow:auto;margin:0;padding:16px;white-space:pre-wrap;word-break:break-word;font:inherit;font-size:16px;line-height:1.55"></pre>
+</div>
+<footer>
     <button class="sz" id="smaller">A−</button>
     <button id="mic">🎤 말하기 시작</button>
     <button class="sz" id="bigger">A+</button>
@@ -61,6 +69,7 @@ const I18N = {
   ko: { start:'🎤 말하기 시작', stop:'⏹ 듣는 중 (누르면 중지)', me:'나', trans:'(번역)' },
   en: { start:'🎤 Start speaking', stop:'⏹ Listening (tap to stop)', me:'Me', trans:'(translated)' }
 };
+let summaryFile = 'summary.md';
 let ws, me = {}, rec, micOn = false, wake, fs = 22, sttMode = 'browser', audio = null;
 
 // 저장된 값 복원
@@ -89,6 +98,11 @@ function connect() {
     if (m.type === 'stt_error') { alert(m.message); setMic(false); }
     if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
     if (m.type === 'caption') addCaption(m);
+    if (m.type === 'summary') {
+      $('sum').disabled = false; $('sum').textContent = '📝';
+      if (m.error) return alert({ empty: '아직 요약할 대화가 없습니다. / Nothing to summarize yet.', busy: '요약 중입니다. 잠시 후 다시 시도하세요. / Already summarizing.' }[m.error] || '요약에 실패했습니다. / Summary failed.');
+      summaryFile = m.filename; $('ovtext').textContent = m.text; $('ov').classList.remove('hide');
+    }
     if (m.type === 'minutes') {
       if (!m.count) return alert(me.lang === 'ko' ? '아직 저장할 대화가 없습니다.' : 'No conversation to save yet.');
       const a = document.createElement('a');
@@ -182,6 +196,10 @@ async function setMic(on) {
   }
 }
 $('mic').onclick = () => setMic(!micOn);
+$('sum').onclick = () => { if (ws.readyState !== 1) return; $('sum').disabled = true; $('sum').textContent = '⏳'; ws.send(JSON.stringify({ type: 'summarize' })); };
+$('ovclose').onclick = () => $('ov').classList.add('hide');
+$('ovcopy').onclick = async () => { try { await navigator.clipboard.writeText($('ovtext').textContent); $('ovcopy').textContent = '✔'; setTimeout(() => $('ovcopy').textContent = '📋 복사 / Copy', 1200); } catch { alert('복사할 수 없습니다. 저장을 사용하세요.'); } };
+$('ovsave').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([$('ovtext').textContent], { type: 'text/markdown;charset=utf-8' })); a.download = summaryFile; document.body.append(a); a.click(); a.remove(); };
 $('dl').onclick = () => ws.readyState === 1 && ws.send(JSON.stringify({ type: 'get_minutes' }));
 $('bigger').onclick = () => { fs = Math.min(40, fs + 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
 $('smaller').onclick = () => { fs = Math.max(14, fs - 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };

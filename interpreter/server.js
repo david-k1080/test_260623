@@ -6,6 +6,19 @@ import WebSocket, { WebSocketServer } from 'ws';
 import Anthropic from '@anthropic-ai/sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// .env 파일 읽기: interpreter/.env 에 KEY=VALUE 형식으로 적어두면 서버가 켜질 때 자동으로 불러옵니다.
+// (이미 터미널에 설정된 환경 변수가 있으면 그 값을 우선합니다)
+try {
+  for (const line of fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (!m || line.trim().startsWith('#')) continue;
+    const v = m[2].replace(/^(['"])(.*)\1$/, '$2');
+    if (process.env[m[1]] === undefined) process.env[m[1]] = v;
+  }
+  console.log('.env 파일 로드됨');
+} catch {}
+
 const PORT = process.env.PORT || 3000;
 // ---------------- 번역 제공자 선택 ----------------
 // TRANSLATE_PROVIDER=gemini|anthropic 로 강제 가능. 없으면 키가 있는 쪽을 자동 선택 (Gemini 우선).
@@ -107,15 +120,15 @@ function systemPrompt(from, to, history) {
 }
 
 let geminiThinkingOk = true;   // 모델이 thinkingConfig를 거부하면 자동으로 끔
-async function geminiTranslate(text, sys) {
+async function geminiGenerate(sys, user, { maxTokens = 600, temperature = 0.2, timeoutMs = 12000 } = {}) {
   const call = async withThinking => {
     const body = {
       systemInstruction: { parts: [{ text: sys }] },
-      contents: [{ role: 'user', parts: [{ text }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 600 },
+      contents: [{ role: 'user', parts: [{ text: user }] }],
+      generationConfig: { temperature, maxOutputTokens: maxTokens },
     };
-    if (withThinking) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };   // 번역은 생각 시간 불필요 → 지연 감소
-    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 12000);
+    if (withThinking) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };   // 생각 시간 끄기 → 지연 감소
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
       const r = await fetch(`${GEMINI_BASE}/models/${MODEL}:generateContent`, {
         method: 'POST', signal: ctl.signal,
@@ -129,7 +142,7 @@ async function geminiTranslate(text, sys) {
   let data;
   try { data = await call(geminiThinkingOk); }
   catch (e) {
-    if (e.status === 400 && geminiThinkingOk) { geminiThinkingOk = false; console.warn('[번역] thinkingConfig 거부됨 → 끄고 재시도'); data = await call(false); }
+    if (e.status === 400 && geminiThinkingOk) { geminiThinkingOk = false; console.warn('[LLM] thinkingConfig 거부됨 → 끄고 재시도'); data = await call(false); }
     else throw e;
   }
   const out = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
@@ -137,16 +150,52 @@ async function geminiTranslate(text, sys) {
   return out;
 }
 
+// 제공자와 무관하게 쓰는 공통 호출 (번역·요약 공용)
+async function llm(sys, user, opts = {}) {
+  if (PROVIDER === 'gemini') return geminiGenerate(sys, user, opts);
+  const msg = await client.messages.create({
+    model: MODEL, max_tokens: opts.maxTokens || 400, system: sys,
+    messages: [{ role: 'user', content: user }],
+  });
+  return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+}
+
 async function translate(text, from, to, history) {
   if (from === to) return text;
   if (PROVIDER === 'mock') return `[MOCK ${to}] ${text}`;
-  const sys = systemPrompt(from, to, history);
-  if (PROVIDER === 'gemini') return geminiTranslate(text, sys);
-  const msg = await client.messages.create({
-    model: MODEL, max_tokens: 400, system: sys,
-    messages: [{ role: 'user', content: text }],
-  });
-  return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();
+  return llm(systemPrompt(from, to, history), text, { maxTokens: 600 });
+}
+
+// ---------------- 회의록 요약 ----------------
+const MAX_SUMMARY_CHARS = 120000;
+async function summarizeRoom(room) {
+  if (!room.log.length) throw new Error('empty');
+  const sorted = [...room.log].sort((a, b) => a.ts - b.ts);
+  let transcript = sorted.map(e => `[${fmtTime(e.ts)}] ${e.name} (${LANG_LABEL[e.lang]}): ${e.text}`).join('\n');
+  let truncated = false;
+  if (transcript.length > MAX_SUMMARY_CHARS) {            // 아주 긴 회의: 앞/뒤만 사용 (중간 생략)
+    const half = MAX_SUMMARY_CHARS / 2;
+    transcript = transcript.slice(0, half) + '\n[... middle of the meeting omitted for length ...]\n' + transcript.slice(-half);
+    truncated = true;
+  }
+  let body;
+  if (PROVIDER === 'mock') body = `[MOCK 요약] 발언 ${room.log.length}건. (번역 API 키가 없어 실제 요약은 생성되지 않았습니다.)`;
+  else {
+    const sys = `You are a meeting secretary. Below is the transcript of a bilingual Korean/English business meeting captured by speech recognition, so some words may be mis-heard. Write concise meeting minutes.
+
+Rules:
+- Use ONLY what is in the transcript. Never invent decisions, numbers, dates, names, owners or deadlines. If something is unclear or may be a recognition error, list it under "확인 필요 / To verify" instead of stating it as fact.
+- Mention an owner or deadline only if it was explicitly said.
+- Use the glossary spellings for company, product and people names.
+- Write the minutes first in Korean, then a line with only "---", then the same content in English.
+- Sections (in this order, use markdown headings): 한 줄 요약 / One-line summary; 핵심 논의 / Key discussion; 결정 사항 / Decisions; 후속 조치 / Action items; 확인 필요 / To verify. If a section has nothing, write "없음" / "None".` + GLOSSARY;
+    body = await llm(sys, transcript, { maxTokens: 3000, temperature: 0.2, timeoutMs: 90000 });
+  }
+  const head = [`# 회의 요약 / Meeting Summary`, ``, `- 방 / Room: ${room.code}`, `- 시작 / Started: ${fmtDate(room.startedAt)} ${fmtTime(room.startedAt)}`,
+    `- 기준 / Based on: ${room.log.length} utterances${truncated ? ' (긴 회의라 중간 부분은 요약에서 생략됨 / middle omitted for length)' : ''}`,
+    ``, `> AI가 자동 생성한 요약입니다. 가격·일정·계약 등 중요한 내용은 전체 회의록과 원문으로 확인하세요.`,
+    `> AI-generated summary. Verify important items against the full minutes.`, ``, `---`, ``].join('\n');
+  return head + body + '\n';
 }
 
 const send = (ws, obj) => ws.readyState === 1 && ws.send(JSON.stringify(obj));
@@ -269,6 +318,18 @@ wss.on('connection', ws => {
     }
     if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) { closeStt(ws); openDeepgram(ws, 0); }
     if (m.type === 'mic_stop') closeStt(ws);
+    if (m.type === 'summarize' && ws.meta) {
+      const room = rooms.get(ws.meta.code);
+      if (!room || !room.log.length) return send(ws, { type: 'summary', error: 'empty' });
+      if (room.summarizing) return send(ws, { type: 'summary', error: 'busy' });
+      room.summarizing = true;
+      summarizeRoom(room).then(text => {
+        const filename = minutesFilename(room).replace(/\.md$/, '_summary.md');
+        if (SAVE_MINUTES) try { fs.mkdirSync(MINUTES_DIR, { recursive: true }); fs.writeFileSync(path.join(MINUTES_DIR, filename), text, 'utf8'); } catch (e) { console.error('[요약] 저장 실패', e.message); }
+        send(ws, { type: 'summary', filename, text });
+      }).catch(e => { console.error('[요약] 실패', e.message); send(ws, { type: 'summary', error: 'failed' }); })
+        .finally(() => { room.summarizing = false; });
+    }
     if (m.type === 'get_minutes' && ws.meta) {
       const room = rooms.get(ws.meta.code);
       if (room) send(ws, { type: 'minutes', filename: minutesFilename(room), text: renderMinutes(room), count: room.log.length });
