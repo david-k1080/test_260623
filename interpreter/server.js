@@ -7,9 +7,16 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
-const MODEL = process.env.TRANSLATE_MODEL || 'claude-haiku-5-5';
-const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
-if (!client) console.warn('⚠ ANTHROPIC_API_KEY 없음 → 번역 대신 [MOCK] 표시');
+// ---------------- 번역 제공자 선택 ----------------
+// TRANSLATE_PROVIDER=gemini|anthropic 로 강제 가능. 없으면 키가 있는 쪽을 자동 선택 (Gemini 우선).
+const PROVIDER = process.env.TRANSLATE_PROVIDER ||
+  (process.env.GEMINI_API_KEY ? 'gemini' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock');
+const MODEL = process.env.TRANSLATE_MODEL ||
+  (PROVIDER === 'gemini' ? 'gemini-2.5-flash' : 'claude-haiku-5-5');
+const GEMINI_BASE = process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
+const client = PROVIDER === 'anthropic' && process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+if (PROVIDER === 'mock') console.warn('⚠ GEMINI_API_KEY / ANTHROPIC_API_KEY 없음 → 번역 대신 [MOCK] 표시');
+else console.log(`[번역] provider=${PROVIDER} model=${MODEL}`);
 
 // 용어집 로드 (서버 시작 시 1회, glossary.json 수정 후 재시작)
 let GLOSSARY = '';
@@ -49,15 +56,50 @@ const server = http.createServer((req, res) => {
 // rooms: code -> { clients:Set<ws>, history:[{name,text}] }
 const rooms = new Map();
 
+function systemPrompt(from, to, history) {
+  const ctx = history.slice(-6).map(h => `${h.name}: ${h.text}`).join('\n');
+  return `You are a live interpreter in a business meeting. Translate the user's utterance from ${LANG_NAME[from]} to ${LANG_NAME[to]}. Output ONLY the translation, natural spoken style, keep names and numbers exact. Do not answer or comment on the content. The input is speech-recognition output and may contain mis-heard words; if a word is clearly a mis-hearing of a glossary term, use the glossary term.` + GLOSSARY +
+    (ctx ? `\n\nRecent conversation (for context only):\n${ctx}` : '');
+}
+
+let geminiThinkingOk = true;   // 모델이 thinkingConfig를 거부하면 자동으로 끔
+async function geminiTranslate(text, sys) {
+  const call = async withThinking => {
+    const body = {
+      systemInstruction: { parts: [{ text: sys }] },
+      contents: [{ role: 'user', parts: [{ text }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 600 },
+    };
+    if (withThinking) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };   // 번역은 생각 시간 불필요 → 지연 감소
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 12000);
+    try {
+      const r = await fetch(`${GEMINI_BASE}/models/${MODEL}:generateContent`, {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY || '' },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) { const e = new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`); e.status = r.status; throw e; }
+      return r.json();
+    } finally { clearTimeout(timer); }
+  };
+  let data;
+  try { data = await call(geminiThinkingOk); }
+  catch (e) {
+    if (e.status === 400 && geminiThinkingOk) { geminiThinkingOk = false; console.warn('[번역] thinkingConfig 거부됨 → 끄고 재시도'); data = await call(false); }
+    else throw e;
+  }
+  const out = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+  if (!out) throw new Error('Gemini 빈 응답(차단 또는 오류): ' + (data.promptFeedback?.blockReason || data.candidates?.[0]?.finishReason || ''));
+  return out;
+}
+
 async function translate(text, from, to, history) {
   if (from === to) return text;
-  if (!client) return `[MOCK ${to}] ${text}`;
-  const ctx = history.slice(-6).map(h => `${h.name}: ${h.text}`).join('\n');
+  if (PROVIDER === 'mock') return `[MOCK ${to}] ${text}`;
+  const sys = systemPrompt(from, to, history);
+  if (PROVIDER === 'gemini') return geminiTranslate(text, sys);
   const msg = await client.messages.create({
-    model: MODEL,
-    max_tokens: 400,
-    system: `You are a live interpreter in a business meeting. Translate the user's utterance from ${LANG_NAME[from]} to ${LANG_NAME[to]}. Output ONLY the translation, natural spoken style, keep names and numbers exact. Do not answer or comment on the content. The input is speech-recognition output and may contain mis-heard words; if a word is clearly a mis-hearing of a glossary term, use the glossary term.` + GLOSSARY +
-      (ctx ? `\n\nRecent conversation (for context only):\n${ctx}` : ''),
+    model: MODEL, max_tokens: 400, system: sys,
     messages: [{ role: 'user', content: text }],
   });
   return msg.content.filter(b => b.type === 'text').map(b => b.text).join('').trim();

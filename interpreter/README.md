@@ -4,7 +4,8 @@
 ```bash
 cd interpreter
 npm install
-export ANTHROPIC_API_KEY=sk-ant-...      # 번역 (Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-...")
+export GEMINI_API_KEY=...                # 번역 (Google AI Studio에서 발급. PowerShell: $env:GEMINI_API_KEY="...")
+# 또는 Claude 사용: export ANTHROPIC_API_KEY=sk-ant-...
 export DEEPGRAM_API_KEY=...              # 음성 인식 (없으면 폰 브라우저 내장 인식으로 대체)
 npm start                                 # http://localhost:3000
 
@@ -20,3 +21,9 @@ cloudflared 설치: macOS `brew install cloudflared` / Windows `winget install C
 - `DEEPGRAM_API_KEY` 가 있으면 Deepgram(nova-3)으로 실시간 인식합니다. `glossary.local.json`의 용어를 keyterm으로 보내 인식률을 높입니다.
 - 서버가 keyterm/모델을 거부하면 자동으로 `nova-3` → `nova-2` 순으로 낮춰 재시도합니다. 서버 로그의 `[STT]` 줄에서 실제 사용된 방식을 확인하세요.
 - 끊기는 시점이 너무 빠르면 `DG_ENDPOINTING=700` 처럼 값을 올려보세요 (ms, 기본 400).
+
+## 번역 엔진 (Gemini / Claude)
+- `GEMINI_API_KEY`가 있으면 Gemini(기본 `gemini-2.5-flash`), 없고 `ANTHROPIC_API_KEY`가 있으면 Claude를 씁니다. 둘 다 있으면 Gemini 우선.
+- 강제로 고르려면 `TRANSLATE_PROVIDER=gemini` 또는 `anthropic`, 모델 변경은 `TRANSLATE_MODEL=...`.
+- 서버 로그 첫 줄의 `[번역] provider=... model=...` 로 실제 사용 중인 엔진을 확인하세요.
+- Gemini 모델이 `thinkingConfig`를 거부하면 자동으로 끄고 재시도합니다 (로그에 표시).
