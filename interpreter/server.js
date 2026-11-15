@@ -9,15 +9,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // .env 파일 읽기: interpreter/.env 에 KEY=VALUE 형식으로 적어두면 서버가 켜질 때 자동으로 불러옵니다.
 // (이미 터미널에 설정된 환경 변수가 있으면 그 값을 우선합니다)
-try {
-  for (const line of fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (!m || line.trim().startsWith('#')) continue;
-    const v = m[2].replace(/^(['"])(.*)\1$/, '$2');
-    if (process.env[m[1]] === undefined) process.env[m[1]] = v;
-  }
-  console.log('.env 파일 로드됨');
-} catch {}
+// (탐색기가 점(.)으로 시작하는 파일을 숨기거나 못 만들게 하는 경우를 위해 interpreter.env 이름도 인식합니다)
+for (const fname of ['.env', 'interpreter.env']) {
+  try {
+    for (const line of fs.readFileSync(path.join(__dirname, fname), 'utf8').split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (!m || line.trim().startsWith('#')) continue;
+      const v = m[2].replace(/^(['"])(.*)\1$/, '$2');
+      if (process.env[m[1]] === undefined) process.env[m[1]] = v;
+    }
+    console.log(`${fname} 파일 로드됨`);
+  } catch {}
+}
 
 const PORT = process.env.PORT || 3000;
 // ---------------- 번역 제공자 선택 ----------------

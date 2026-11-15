@@ -3,3 +3,6 @@ glossary.local.json
 rehearsal.local.md
 minutes/
 .env
+*.env
+.env.*
+!.env.example
