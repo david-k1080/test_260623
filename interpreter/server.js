@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import Anthropic from '@anthropic-ai/sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,6 +13,7 @@ if (!client) console.warn('⚠ ANTHROPIC_API_KEY 없음 → 번역 대신 [MOCK]
 
 // 용어집 로드 (서버 시작 시 1회, glossary.json 수정 후 재시작)
 let GLOSSARY = '';
+let KEYTERMS = { ko: [], en: [] };
 try {
   // glossary.local.json(실제 회사/고객 용어, git 제외)이 있으면 우선 사용
   const gfile = fs.existsSync(path.join(__dirname, 'glossary.local.json')) ? 'glossary.local.json' : 'glossary.json';
@@ -24,6 +25,9 @@ try {
   const mh = Object.entries(g.misheard || {}).map(([k, v]) => `- "${k}" is often mis-transcribed as: ${v.join(', ')}`);
   if (mh.length) GLOSSARY += `\n\nCommon speech-recognition errors (correct them to the term on the left):\n${mh.join('\n')}`;
   if ((g.keep_as_is || []).length) GLOSSARY += `\n\nNames to keep unchanged (transliterate only if needed): ${g.keep_as_is.join(', ')}`;
+  const uniq = a => [...new Set(a.map(x => String(x).trim()).filter(x => x && x.length <= 40))].slice(0, 100);
+  KEYTERMS.en = uniq([...(g.terms || []).map(t => t.en), ...(g.keep_as_is || []), ...Object.keys(g.misheard || {})]);
+  KEYTERMS.ko = uniq((g.terms || []).map(t => t.ko));
   console.log(`용어집 ${(g.terms || []).length}개 로드`);
 } catch (e) { console.warn('용어집 없음:', e.message); }
 
@@ -64,9 +68,99 @@ const broadcastRoster = room => {
   room.clients.forEach(c => send(c, { type: 'roster', roster }));
 };
 
+// ---------------- Deepgram 실시간 음성 인식 ----------------
+const DG_KEY = process.env.DEEPGRAM_API_KEY;
+const DG_URL = process.env.DEEPGRAM_URL || 'wss://api.deepgram.com/v1/listen';
+const DG_MODEL = process.env.DEEPGRAM_MODEL || 'nova-3';
+if (!DG_KEY && !process.env.DEEPGRAM_URL) console.warn('⚠ DEEPGRAM_API_KEY 없음 → 폰 브라우저 내장 음성 인식으로 대체');
+
+function dgUrl(lang, model, withKeyterms) {
+  const p = new URLSearchParams({
+    model, language: lang === 'ko' ? 'ko' : 'en',
+    encoding: 'linear16', sample_rate: '16000', channels: '1',
+    interim_results: 'true', smart_format: 'true', punctuate: 'true',
+    endpointing: process.env.DG_ENDPOINTING || '400', utterance_end_ms: '1200',
+  });
+  let u = `${DG_URL}?${p}`;
+  if (withKeyterms) for (const k of KEYTERMS[lang]) u += `&keyterm=${encodeURIComponent(k)}`;
+  return u;
+}
+
+// 시도 순서: nova-3+용어부스팅 → nova-3 → nova-2 (해당 언어/옵션을 서버가 거부하면 다음으로)
+function openDeepgram(ws, attempt = 0) {
+  const plans = [[DG_MODEL, true], [DG_MODEL, false], ['nova-2', false]];
+  if (attempt >= plans.length) { send(ws, { type: 'stt_error', message: 'Deepgram 연결 실패' }); return; }
+  const [model, kt] = plans[attempt];
+  const dg = new WebSocket(dgUrl(ws.meta.lang, model, kt), { headers: { Authorization: `Token ${DG_KEY || 'test'}` } });
+  const st = ws.stt = { dg, buf: '', ka: null, opened: false, closing: false, pending: ws.stt?.pending || [] };
+  dg.on('open', () => {
+    st.opened = true;
+    st.pending.forEach(b => dg.send(b)); st.pending = [];   // 연결 전에 들어온 오디오 전송
+    console.log(`[STT] ${ws.meta.name} ${ws.meta.lang} model=${model} keyterms=${kt}`);
+    send(ws, { type: 'stt_ready', model });
+    st.ka = setInterval(() => dg.readyState === 1 && dg.send(JSON.stringify({ type: 'KeepAlive' })), 8000);
+  });
+  dg.on('unexpected-response', (_req, res) => {
+    console.warn(`[STT] 거부됨 (${res.statusCode}) model=${model} keyterms=${kt} → 다음 방식 시도`);
+    openDeepgram(ws, attempt + 1);
+  });
+  dg.on('message', raw => {
+    let m; try { m = JSON.parse(raw); } catch { return; }
+    if (m.type === 'Results') {
+      const t = (m.channel?.alternatives?.[0]?.transcript || '').trim();
+      if (!t) return;
+      if (!m.is_final) return send(ws, { type: 'interim', text: (st.buf + ' ' + t).trim() });
+      st.buf = (st.buf + ' ' + t).trim();
+      if (m.speech_final || st.buf.length > 220) flushStt(ws); else send(ws, { type: 'interim', text: st.buf });
+    } else if (m.type === 'UtteranceEnd') flushStt(ws);
+  });
+  dg.on('close', () => {
+    clearInterval(st.ka);
+    flushStt(ws);
+    if (ws.stt === st && !st.closing && st.opened && ws.readyState === 1) { console.log('[STT] 끊김 → 재연결'); setTimeout(() => ws.stt === st && openDeepgram(ws, 0), 500); }
+  });
+  dg.on('error', e => { if (!st.opened) return; console.error('[STT] error', e.message); });
+}
+function flushStt(ws) {
+  const st = ws.stt; if (!st || !st.buf) return;
+  const text = st.buf; st.buf = '';
+  send(ws, { type: 'interim', text: '' });
+  handleUtterance(ws, text, String(Date.now()));
+}
+function closeStt(ws) {
+  const st = ws.stt; if (!st) return;
+  st.closing = true; flushStt(ws); clearInterval(st.ka);
+  try { st.dg.readyState === 1 && st.dg.send(JSON.stringify({ type: 'CloseStream' })); st.dg.close(); } catch {}
+  ws.stt = null;
+}
+
+// ---------------- 발화 처리(번역 + 배포) ----------------
+async function handleUtterance(ws, rawText, id) {
+  const text = String(rawText || '').trim().slice(0, 1000);
+  if (!text || !ws.meta) return;
+  const { code, lang, name } = ws.meta;
+  const room = rooms.get(code); if (!room) return;
+  const other = lang === 'ko' ? 'en' : 'ko';
+  room.clients.forEach(c => c.meta.lang === lang &&
+    send(c, { type: 'caption', id, name, lang, text, original: true, self: c === ws }));
+  try {
+    const t = await translate(text, lang, other, room.history);
+    room.clients.forEach(c => c.meta.lang === other &&
+      send(c, { type: 'caption', id, name, lang: other, text: t, original: false }));
+  } catch (e) {
+    console.error('translate error', e.message);
+    room.clients.forEach(c => c.meta.lang === other &&
+      send(c, { type: 'caption', id, name, lang: other, text: '(번역 실패 / translation failed)', original: false }));
+  }
+  room.history.push({ name, text });
+  if (room.history.length > 30) room.history.shift();
+}
+
 const wss = new WebSocketServer({ server });
 wss.on('connection', ws => {
-  ws.on('message', async raw => {
+  ws.on('message', (raw, isBinary) => {
+    // 마이크 오디오 (PCM16 16kHz) → Deepgram
+    if (isBinary) { const st = ws.stt; if (!st) return; if (st.dg.readyState === 1) st.dg.send(raw); else if (st.pending.length < 100) st.pending.push(raw); return; }
     let m; try { m = JSON.parse(raw); } catch { return; }
 
     if (m.type === 'join') {
@@ -77,36 +171,17 @@ wss.on('connection', ws => {
       if (!rooms.has(code)) rooms.set(code, { clients: new Set(), history: [] });
       const room = rooms.get(code);
       room.clients.add(ws);
-      send(ws, { type: 'joined', room: code });
+      send(ws, { type: 'joined', room: code, stt: (DG_KEY || process.env.DEEPGRAM_URL) ? 'deepgram' : 'browser' });
       broadcastRoster(room);
     }
-
-    if (m.type === 'utterance' && ws.meta) {
-      const text = String(m.text || '').trim().slice(0, 1000);
-      if (!text) return;
-      const { code, lang, name } = ws.meta;
-      const room = rooms.get(code);
-      const other = lang === 'ko' ? 'en' : 'ko';
-      // 화자와 같은 언어 사용자에게는 원문을 즉시 전송 (지연 0)
-      const id = m.id || String(Date.now());
-      room.clients.forEach(c => c.meta.lang === lang &&
-        send(c, { type: 'caption', id, name, lang, text, original: true, self: c === ws }));
-      // 다른 언어 사용자에게는 번역 후 전송
-      try {
-        const t = await translate(text, lang, other, room.history);
-        room.clients.forEach(c => c.meta.lang === other &&
-          send(c, { type: 'caption', id, name, lang: other, text: t, original: false }));
-      } catch (e) {
-        console.error('translate error', e.message);
-        room.clients.forEach(c => c.meta.lang === other &&
-          send(c, { type: 'caption', id, name, lang: other, text: '(번역 실패 / translation failed)', original: false }));
-      }
-      room.history.push({ name, text });
-      if (room.history.length > 30) room.history.shift();
-    }
+    if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) { closeStt(ws); openDeepgram(ws, 0); }
+    if (m.type === 'mic_stop') closeStt(ws);
+    // 브라우저 내장 음성 인식 대체 경로 (Deepgram 키 없을 때)
+    if (m.type === 'utterance' && ws.meta) handleUtterance(ws, m.text, m.id || String(Date.now()));
   });
 
   ws.on('close', () => {
+    closeStt(ws);
     if (!ws.meta) return;
     const room = rooms.get(ws.meta.code);
     if (!room) return;

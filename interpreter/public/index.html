@@ -61,7 +61,7 @@ const I18N = {
   ko: { start:'🎤 말하기 시작', stop:'⏹ 듣는 중 (누르면 중지)', me:'나', trans:'(번역)' },
   en: { start:'🎤 Start speaking', stop:'⏹ Listening (tap to stop)', me:'Me', trans:'(translated)' }
 };
-let ws, me = {}, rec, micOn = false, wake, fs = 22;
+let ws, me = {}, rec, micOn = false, wake, fs = 22, sttMode = 'browser', audio = null;
 
 // 저장된 값 복원
 try { const s = JSON.parse(localStorage.getItem('li') || '{}');
@@ -79,11 +79,14 @@ $('go').onclick = () => {
 
 function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.binaryType = 'arraybuffer';
   ws.onopen = () => { $('status').style.color = '#22c55e'; ws.send(JSON.stringify({ type:'join', ...me })); };
   ws.onclose = () => { $('status').style.color = '#ef4444'; setTimeout(connect, 1500); };
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
-    if (m.type === 'joined') $('rcode').textContent = m.room;
+    if (m.type === 'joined') { $('rcode').textContent = m.room; sttMode = m.stt; }
+    if (m.type === 'interim') $('interim').textContent = m.text ? '… ' + m.text : '';
+    if (m.type === 'stt_error') { alert(m.message); setMic(false); }
     if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
     if (m.type === 'caption') addCaption(m);
   };
@@ -121,11 +124,56 @@ function startRec() {
   rec.onerror = e => { if (e.error === 'not-allowed') { micOn = false; setMic(false); alert('마이크 권한을 허용해주세요 / Allow microphone'); } };
   rec.start();
 }
+// ---- Deepgram 경로: 마이크 → 16kHz PCM → 서버 ----
+const WORKLET = `
+class P extends AudioWorkletProcessor {
+  constructor(){ super(); this.r = sampleRate / 16000; this.ph = 0; this.acc = 0; this.n = 0; this.out = new Int16Array(1600); this.o = 0; }
+  process(inputs){
+    const ch = inputs[0][0]; if (!ch) return true;
+    for (let i = 0; i < ch.length; i++) {
+      this.acc += ch[i]; this.n++; this.ph += 1;
+      if (this.ph >= this.r) {
+        this.ph -= this.r; const v = Math.max(-1, Math.min(1, this.acc / this.n)); this.acc = 0; this.n = 0;
+        this.out[this.o++] = v < 0 ? v * 32768 : v * 32767;
+        if (this.o === 1600) { this.port.postMessage(this.out.slice().buffer); this.o = 0; }
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('p', P);`;
+
+async function startAudio() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  await ctx.resume();
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
+  const src = ctx.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(ctx, 'p');
+  node.port.onmessage = e => { if (ws.readyState === 1) ws.send(e.data); };
+  const mute = ctx.createGain(); mute.gain.value = 0;         // 스피커로 소리 안 나가게
+  src.connect(node); node.connect(mute); mute.connect(ctx.destination);
+  audio = { stream, ctx, node };
+  ws.send(JSON.stringify({ type: 'mic_start' }));
+}
+function stopAudio() {
+  if (!audio) return;
+  ws.readyState === 1 && ws.send(JSON.stringify({ type: 'mic_stop' }));
+  audio.node.disconnect(); audio.stream.getTracks().forEach(t => t.stop()); audio.ctx.close(); audio = null;
+}
+
 async function setMic(on) {
   micOn = on; $('mic').classList.toggle('on', on);
   $('mic').textContent = on ? I18N[me.lang].stop : I18N[me.lang].start;
-  if (on) { startRec(); try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
-  else { rec?.stop(); $('interim').textContent = ''; wake?.release?.(); }
+  if (on) {
+    try {
+      if (sttMode === 'deepgram') await startAudio(); else startRec();
+      try { wake = await navigator.wakeLock?.request('screen'); } catch {}
+    } catch (e) { micOn = false; $('mic').classList.remove('on'); $('mic').textContent = I18N[me.lang].start; alert('마이크를 시작할 수 없습니다 / Cannot start microphone: ' + e.message); }
+  } else {
+    if (sttMode === 'deepgram') stopAudio(); else rec?.stop();
+    $('interim').textContent = ''; wake?.release?.();
+  }
 }
 $('mic').onclick = () => setMic(!micOn);
 $('bigger').onclick = () => { fs = Math.min(40, fs + 3); document.documentElement.style.setProperty('--fs', fs + 'px'); };
