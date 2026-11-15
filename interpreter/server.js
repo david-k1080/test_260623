@@ -21,6 +21,8 @@ try {
   if (g.context) GLOSSARY += `\n\nMeeting context: ${g.context}`;
   const lines = (g.terms || []).map(t => `- ${t.ko} <-> ${t.en}`);
   if (lines.length) GLOSSARY += `\n\nGlossary (always use these exact renderings):\n${lines.join('\n')}`;
+  const mh = Object.entries(g.misheard || {}).map(([k, v]) => `- "${k}" is often mis-transcribed as: ${v.join(', ')}`);
+  if (mh.length) GLOSSARY += `\n\nCommon speech-recognition errors (correct them to the term on the left):\n${mh.join('\n')}`;
   if ((g.keep_as_is || []).length) GLOSSARY += `\n\nNames to keep unchanged (transliterate only if needed): ${g.keep_as_is.join(', ')}`;
   console.log(`용어집 ${(g.terms || []).length}개 로드`);
 } catch (e) { console.warn('용어집 없음:', e.message); }
