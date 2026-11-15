@@ -28,7 +28,8 @@ try {
   const uniq = a => [...new Set(a.map(x => String(x).trim()).filter(x => x && x.length <= 40))].slice(0, 100);
   KEYTERMS.en = uniq([...(g.terms || []).map(t => t.en), ...(g.keep_as_is || []), ...Object.keys(g.misheard || {})]);
   KEYTERMS.ko = uniq((g.terms || []).map(t => t.ko));
-  console.log(`용어집 ${(g.terms || []).length}개 로드`);
+  if (g.keyterms) { KEYTERMS.en = uniq(g.keyterms.en || []); KEYTERMS.ko = uniq(g.keyterms.ko || []); }
+  console.log(`용어집 ${(g.terms || []).length}개 로드, keyterm en=${KEYTERMS.en.length} ko=${KEYTERMS.ko.length}`);
 } catch (e) { console.warn('용어집 없음:', e.message); }
 
 const LANG_NAME = { ko: 'Korean', en: 'English' };
