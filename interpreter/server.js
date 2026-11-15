@@ -11,6 +11,16 @@ const MODEL = process.env.TRANSLATE_MODEL || 'claude-haiku-5-5';
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 if (!client) console.warn('⚠ ANTHROPIC_API_KEY 없음 → 번역 대신 [MOCK] 표시');
 
+// 용어집 로드 (서버 시작 시 1회, glossary.json 수정 후 재시작)
+let GLOSSARY = '';
+try {
+  const g = JSON.parse(fs.readFileSync(path.join(__dirname, 'glossary.json'), 'utf8'));
+  const lines = (g.terms || []).map(t => `- ${t.ko} <-> ${t.en}`);
+  if (lines.length) GLOSSARY += `\n\nGlossary (always use these exact renderings):\n${lines.join('\n')}`;
+  if ((g.keep_as_is || []).length) GLOSSARY += `\n\nNames to keep unchanged (transliterate only if needed): ${g.keep_as_is.join(', ')}`;
+  console.log(`용어집 ${(g.terms || []).length}개 로드`);
+} catch (e) { console.warn('용어집 없음:', e.message); }
+
 const LANG_NAME = { ko: 'Korean', en: 'English' };
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
 
@@ -35,7 +45,7 @@ async function translate(text, from, to, history) {
   const msg = await client.messages.create({
     model: MODEL,
     max_tokens: 400,
-    system: `You are a live interpreter in a business meeting. Translate the user's utterance from ${LANG_NAME[from]} to ${LANG_NAME[to]}. Output ONLY the translation, natural spoken style, keep names and numbers exact. Do not answer or comment on the content.` +
+    system: `You are a live interpreter in a business meeting. Translate the user's utterance from ${LANG_NAME[from]} to ${LANG_NAME[to]}. Output ONLY the translation, natural spoken style, keep names and numbers exact. Do not answer or comment on the content. The input is speech-recognition output and may contain mis-heard words; if a word is clearly a mis-hearing of a glossary term, use the glossary term.` + GLOSSARY +
       (ctx ? `\n\nRecent conversation (for context only):\n${ctx}` : ''),
     messages: [{ role: 'user', content: text }],
   });

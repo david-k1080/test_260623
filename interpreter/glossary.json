@@ -1,0 +1,10 @@
+{
+  "_설명": "ko=한국어 표기, en=영어 표기. 번역 시 항상 이 표기를 사용합니다. 아래는 예시이니 실제 용어로 교체하세요.",
+  "terms": [
+    { "ko": "견적서", "en": "quotation" },
+    { "ko": "납기", "en": "delivery lead time" },
+    { "ko": "최소 주문 수량", "en": "MOQ (minimum order quantity)" },
+    { "ko": "샘플", "en": "sample" }
+  ],
+  "keep_as_is": ["회사명 예시", "제품명 예시"]
+}
