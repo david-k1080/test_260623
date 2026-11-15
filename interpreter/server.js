@@ -207,6 +207,72 @@ const broadcastRoster = room => {
   room.clients.forEach(c => send(c, { type: 'roster', roster }));
 };
 
+// ---------------- 화자 중재 (여러 폰이 한 방에서 동시에 켜져 있을 때) ----------------
+// 같은 방에서는 모든 폰이 모든 사람의 목소리를 듣습니다. 그대로 두면 한 마디가 여러 번(또는 엉뚱한 언어로) 통역됩니다.
+// 각 폰이 보내는 음량을 비교해, 그 발언 동안 '가장 크게 들은 폰 = 말한 사람의 폰'의 결과만 통과시키고,
+// 혹시 남는 거의 같은 문장은 중복으로 제거합니다. 끄려면 ARBITRATE=0.
+const ARBITRATE = process.env.ARBITRATE !== '0';
+let connSeq = 0;
+const topMean = (arr, since) => {
+  const v = arr.filter(x => x.t >= since).map(x => x.v).sort((a, b) => b - a);
+  if (!v.length) return 0;
+  const k = Math.max(1, Math.ceil(v.length * 0.2));
+  return v.slice(0, k).reduce((a, b) => a + b, 0) / k;
+};
+const bigrams = t => { const s = t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); const m = new Map(); for (let i = 0; i < s.length - 1; i++) { const g = s.slice(i, i + 2); m.set(g, (m.get(g) || 0) + 1); } return m; };
+function similar(a, b) {
+  const A = bigrams(a), B = bigrams(b); let inter = 0, na = 0, nb = 0;
+  for (const [, n] of A) na += n; for (const [, n] of B) nb += n;
+  for (const [g, n] of A) inter += Math.min(n, B.get(g) || 0);
+  return na && nb ? (2 * inter) / (na + nb) : 0;
+}
+function rivalCheck(ws, since) {
+  const room = rooms.get(ws.meta.code);
+  const now = Date.now();
+  ws.levels = ws.levels.filter(x => now - x.t < 15000);
+  const mine = topMean(ws.levels, since);
+  const rivals = room ? [...room.clients].filter(c => c !== ws && c.stt && c.levels?.length) : [];
+  if (!(mine > 0 && rivals.length)) return { lost: false, mine, rivals, louder: null };
+  let louder = null, lv = -1;
+  for (const c of rivals) { const p = topMean(c.levels, since); if (p > lv) { lv = p; louder = c; } }
+  const lost = lv > mine || (lv === mine && louder.id < ws.id);   // 동점이면 먼저 접속한 폰이 이김
+  return { lost, mine, rivals, louder: lost ? louder : null };
+}
+function allowUtterance(ws, text, since) {
+  if (!ARBITRATE) return true;
+  const room = rooms.get(ws.meta.code); if (!room) return true;
+  const now = Date.now();
+  const r = rivalCheck(ws, since);
+  if (r.rivals.length && r.mine > 0) {
+    console.log(`[중재] ${ws.meta.name} ${r.mine.toFixed(3)} vs ` + r.rivals.map(c => `${c.meta.name} ${topMean(c.levels, since).toFixed(3)}`).join(', ') + (r.lost ? ` → 제외 (${r.louder.meta.name}이(가) 더 크게 들음)` : ' → 통과'));
+    if (r.lost) return false;
+  }
+  room.recent = (room.recent || []).filter(x => now - x.t < 5000);
+  if (room.recent.some(x => x.id !== ws.id && similar(x.text, text) >= 0.7)) { console.log(`[중재] ${ws.meta.name}: 같은 문장 중복 → 제외`); return false; }
+  room.recent.push({ t: now, id: ws.id, text });
+  return true;
+}
+
+// ---------------- 실시간 초안 번역 ----------------
+// 말하는 도중(음성 인식 중간 결과)에도 번역을 미리 보여줘서, 말이 끝나고 기다리는 시간을 줄입니다.
+// 초안은 회색 기울임으로 표시되다가 문장이 확정되면 같은 자리에서 확정 번역으로 바뀝니다. 끄려면 LIVE_DRAFT=0.
+const LIVE_DRAFT = process.env.LIVE_DRAFT !== '0';
+function maybeDraft(ws, st, text) {
+  if (!LIVE_DRAFT || !st.draftId || !ws.meta) return;
+  const now = Date.now();
+  if (st.draftBusy || now - (st.lastDraftAt || 0) < 1100 || text.length < 6 || text === st.lastDraftText) return;
+  const room = rooms.get(ws.meta.code); if (!room) return;
+  const other = ws.meta.lang === 'ko' ? 'en' : 'ko';
+  if (![...room.clients].some(c => c.meta.lang === other)) return;
+  if (ARBITRATE && rivalCheck(ws, (st.utterStart || now - 3000) - 200).lost) return;   // 옆 사람 목소리면 초안도 만들지 않음
+  const id = st.draftId;
+  st.draftBusy = true; st.lastDraftAt = now; st.lastDraftText = text;
+  translate(text, ws.meta.lang, other, room.history).then(t => {
+    if (ws.stt !== st || st.draftId !== id) return;   // 이미 확정되었거나 취소됨
+    room.clients.forEach(c => c.meta.lang === other && send(c, { type: 'draft', id, name: ws.meta.name, lang: other, text: t }));
+  }).catch(() => {}).finally(() => { st.draftBusy = false; });
+}
+
 // ---------------- Deepgram 실시간 음성 인식 ----------------
 const DG_KEY = process.env.DEEPGRAM_API_KEY;
 const DG_URL = process.env.DEEPGRAM_URL || 'wss://api.deepgram.com/v1/listen';
@@ -248,9 +314,10 @@ function openDeepgram(ws, attempt = 0) {
     if (m.type === 'Results') {
       const t = (m.channel?.alternatives?.[0]?.transcript || '').trim();
       if (!t) return;
-      if (!m.is_final) return send(ws, { type: 'interim', text: (st.buf + ' ' + t).trim() });
+      if (!st.utterStart) { st.utterStart = Date.now() - 800; st.draftId = `d${ws.id}-${Date.now()}`; st.lastDraftText = ''; }
+      if (!m.is_final) { const cur = (st.buf + ' ' + t).trim(); maybeDraft(ws, st, cur); return send(ws, { type: 'interim', text: cur }); }
       st.buf = (st.buf + ' ' + t).trim();
-      if (m.speech_final || st.buf.length > 220) flushStt(ws); else send(ws, { type: 'interim', text: st.buf });
+      if (m.speech_final || st.buf.length > 220) flushStt(ws); else { maybeDraft(ws, st, st.buf); send(ws, { type: 'interim', text: st.buf }); }
     } else if (m.type === 'UtteranceEnd') flushStt(ws);
   });
   dg.on('close', () => {
@@ -263,8 +330,15 @@ function openDeepgram(ws, attempt = 0) {
 function flushStt(ws) {
   const st = ws.stt; if (!st || !st.buf) return;
   const text = st.buf; st.buf = '';
+  const since = (st.utterStart || Date.now() - 3000) - 200; st.utterStart = null;
+  const draftId = st.draftId; st.draftId = null; st.lastDraftText = '';
   send(ws, { type: 'interim', text: '' });
-  handleUtterance(ws, text, String(Date.now()));
+  if (!allowUtterance(ws, text, since)) {             // 옆 사람 목소리를 들은 폰이면 버림
+    const room = rooms.get(ws.meta.code);
+    if (room && draftId) room.clients.forEach(c => c.meta.lang !== ws.meta.lang && send(c, { type: 'draft_clear', id: draftId }));
+    return;
+  }
+  handleUtterance(ws, text, String(Date.now()), draftId);
 }
 function closeStt(ws) {
   const st = ws.stt; if (!st) return;
@@ -274,7 +348,7 @@ function closeStt(ws) {
 }
 
 // ---------------- 발화 처리(번역 + 배포) ----------------
-async function handleUtterance(ws, rawText, id) {
+async function handleUtterance(ws, rawText, id, draftId) {
   const text = String(rawText || '').trim().slice(0, 1000);
   if (!text || !ws.meta) return;
   const { code, lang, name } = ws.meta;
@@ -286,13 +360,13 @@ async function handleUtterance(ws, rawText, id) {
   try {
     const t = await translate(text, lang, other, room.history);
     room.clients.forEach(c => c.meta.lang === other &&
-      send(c, { type: 'caption', id, name, lang: other, text: t, original: false }));
+      send(c, { type: 'caption', id, name, lang: other, text: t, original: false, replaces: draftId }));
     room.log.push({ ts, name, lang, text, translation: t });
   } catch (e) {
     room.log.push({ ts, name, lang, text, failed: true });
     console.error('translate error', e.message);
     room.clients.forEach(c => c.meta.lang === other &&
-      send(c, { type: 'caption', id, name, lang: other, text: '(번역 실패 / translation failed)', original: false }));
+      send(c, { type: 'caption', id, name, lang: other, text: '(번역 실패 / translation failed)', original: false, replaces: draftId }));
   }
   room.history.push({ name, text });
   if (room.history.length > 30) room.history.shift();
@@ -301,6 +375,7 @@ async function handleUtterance(ws, rawText, id) {
 
 const wss = new WebSocketServer({ server });
 wss.on('connection', ws => {
+  ws.id = ++connSeq; ws.levels = [];
   ws.on('message', (raw, isBinary) => {
     // 마이크 오디오 (PCM16 16kHz) → Deepgram
     if (isBinary) { const st = ws.stt; if (!st) return; if (st.dg.readyState === 1) st.dg.send(raw); else if (st.pending.length < 100) st.pending.push(raw); return; }
@@ -320,7 +395,8 @@ wss.on('connection', ws => {
       broadcastRoster(room);
     }
     if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) { closeStt(ws); openDeepgram(ws, 0); }
-    if (m.type === 'mic_stop') closeStt(ws);
+    if (m.type === 'mic_stop') { closeStt(ws); ws.levels = []; }
+    if (m.type === 'level' && typeof m.v === 'number') { ws.levels.push({ t: Date.now(), v: Math.min(1, Math.max(0, m.v)) }); if (ws.levels.length > 200) ws.levels.shift(); }
     if (m.type === 'summarize' && ws.meta) {
       const room = rooms.get(ws.meta.code);
       if (!room || !room.log.length) return send(ws, { type: 'summary', error: 'empty' });

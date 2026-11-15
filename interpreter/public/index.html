@@ -20,6 +20,7 @@
   #feed { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
   .msg .who { font-size:12px; color:var(--dim); margin-bottom:3px; }
   .msg .bubble { background:var(--card); border-radius:14px; padding:12px 14px; font-size:var(--fs,22px); line-height:1.45; width:fit-content; max-width:92%; }
+  .msg.draft .bubble { opacity:.6; font-style:italic; }
   .msg.self { align-items:flex-end; display:flex; flex-direction:column; }
   .msg.self .bubble { background:var(--me); }
   #interim { min-height:28px; padding:4px 16px; color:var(--dim); font-size:15px; font-style:italic; }
@@ -66,10 +67,10 @@
 const $ = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const I18N = {
-  ko: { start:'🎤 말하기 시작', stop:'⏹ 듣는 중 (누르면 중지)', me:'나', trans:'(번역)' },
-  en: { start:'🎤 Start speaking', stop:'⏹ Listening (tap to stop)', me:'Me', trans:'(translated)' }
+  ko: { start:'🔇 음소거됨 (누르면 켜기)', stop:'🎤 듣는 중 (누르면 음소거)', me:'나', trans:'(번역)' },
+  en: { start:'🔇 Muted (tap to turn on)', stop:'🎤 Listening (tap to mute)', me:'Me', trans:'(translated)' }
 };
-let summaryFile = 'summary.md';
+let summaryFile = 'summary.md', autoTried = false;
 let ws, me = {}, rec, micOn = false, wake, fs = 22, sttMode = 'browser', audio = null;
 
 // 저장된 값 복원
@@ -78,7 +79,17 @@ try { const s = JSON.parse(localStorage.getItem('li') || '{}');
 const qr = new URLSearchParams(location.search).get('room'); if (qr) $('room').value = qr;
 if (!SR) $('warn').textContent = '⚠ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome(안드로이드) 또는 Safari(iOS)를 사용하세요. / Use Chrome (Android) or Safari (iOS).';
 
+let pre = null;   // 입장 버튼을 누르는 순간(사용자 동작) 마이크 권한/오디오를 미리 준비 → 이후 자동 시작 가능
+function prepareAudio() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(); ctx.resume();
+    const streamP = navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
+    streamP.catch(() => {});
+    pre = { ctx, streamP };
+  } catch { pre = null; }
+}
 $('go').onclick = () => {
+  prepareAudio();
   me = { room:$('room').value.trim() || 'MEET', name:$('name').value.trim() || 'Guest', lang:$('lang').value };
   localStorage.setItem('li', JSON.stringify(me));
   $('join').classList.add('hide'); $('app').classList.remove('hide');
@@ -93,10 +104,16 @@ function connect() {
   ws.onclose = () => { $('status').style.color = '#ef4444'; setTimeout(connect, 1500); };
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
-    if (m.type === 'joined') { $('rcode').textContent = m.room; sttMode = m.stt; }
+    if (m.type === 'joined') {
+      $('rcode').textContent = m.room; sttMode = m.stt;
+      if (micOn && sttMode === 'deepgram') ws.send(JSON.stringify({ type: 'mic_start' }));   // 재접속 후 음성 인식 다시 연결
+      else if (!micOn && !autoTried) { autoTried = true; setMic(true); }                      // 입장하면 자동으로 마이크 켜기
+    }
     if (m.type === 'interim') $('interim').textContent = m.text ? '… ' + m.text : '';
     if (m.type === 'stt_error') { alert(m.message); setMic(false); }
     if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
+    if (m.type === 'draft') showDraft(m);
+    if (m.type === 'draft_clear') document.querySelector(`[data-draft="${CSS.escape(m.id)}"]`)?.remove();
     if (m.type === 'caption') addCaption(m);
     if (m.type === 'summary') {
       $('sum').disabled = false; $('sum').textContent = '📝';
@@ -112,7 +129,28 @@ function connect() {
   };
 }
 
+function showDraft(m) {
+  let el = document.querySelector(`[data-draft="${CSS.escape(m.id)}"]`);
+  if (!el) {
+    el = document.createElement('div'); el.className = 'msg draft'; el.dataset.draft = m.id;
+    const who = document.createElement('div'); who.className = 'who'; who.textContent = m.name + ' …';
+    const b = document.createElement('div'); b.className = 'bubble';
+    el.append(who, b); $('feed').append(el);
+  }
+  el.querySelector('.bubble').textContent = m.text;
+  $('feed').scrollTop = $('feed').scrollHeight;
+}
 function addCaption(m) {
+  if (m.replaces) {                                   // 초안이 있으면 같은 자리에서 확정 번역으로 교체
+    const d = document.querySelector(`[data-draft="${CSS.escape(m.replaces)}"]`);
+    if (d) {
+      d.classList.remove('draft'); delete d.dataset.draft;
+      d.querySelector('.bubble').textContent = m.text;
+      d.querySelector('.who').textContent = m.name + ' ' + I18N[me.lang].trans;
+      $('feed').scrollTop = $('feed').scrollHeight;
+      return;
+    }
+  }
   const el = document.createElement('div');
   el.className = 'msg' + (m.self ? ' self' : '');
   const who = document.createElement('div'); who.className = 'who';
@@ -164,13 +202,26 @@ class P extends AudioWorkletProcessor {
 registerProcessor('p', P);`;
 
 async function startAudio() {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  let ctx, stream;
+  if (pre && pre.ctx.state !== 'closed') { ctx = pre.ctx; stream = await pre.streamP; pre = null; }
+  else {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: false } });
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+  }
   await ctx.resume();
   await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: 'text/javascript' })));
   const src = ctx.createMediaStreamSource(stream);
   const node = new AudioWorkletNode(ctx, 'p');
-  node.port.onmessage = e => { if (ws.readyState === 1) ws.send(e.data); };
+  let lvlMax = 0, lvlN = 0;
+  node.port.onmessage = e => {
+    if (ws.readyState !== 1) return;
+    ws.send(e.data);
+    // 내 마이크의 음량을 서버에 알려줌 → 방 안의 여러 폰 중 '가장 가까이서 말한 폰'만 통역 (옆 사람 목소리 중복 방지)
+    const a = new Int16Array(e.data); let s = 0, n = 0;
+    for (let i = 0; i < a.length; i += 4) { const x = a[i] / 32768; s += x * x; n++; }
+    lvlMax = Math.max(lvlMax, Math.sqrt(s / n));
+    if (++lvlN >= 2) { ws.send(JSON.stringify({ type: 'level', v: +lvlMax.toFixed(4) })); lvlMax = 0; lvlN = 0; }
+  };
   const mute = ctx.createGain(); mute.gain.value = 0;         // 스피커로 소리 안 나가게
   src.connect(node); node.connect(mute); mute.connect(ctx.destination);
   audio = { stream, ctx, node };
