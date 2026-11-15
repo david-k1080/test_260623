@@ -14,7 +14,11 @@ if (!client) console.warn('⚠ ANTHROPIC_API_KEY 없음 → 번역 대신 [MOCK]
 // 용어집 로드 (서버 시작 시 1회, glossary.json 수정 후 재시작)
 let GLOSSARY = '';
 try {
-  const g = JSON.parse(fs.readFileSync(path.join(__dirname, 'glossary.json'), 'utf8'));
+  // glossary.local.json(실제 회사/고객 용어, git 제외)이 있으면 우선 사용
+  const gfile = fs.existsSync(path.join(__dirname, 'glossary.local.json')) ? 'glossary.local.json' : 'glossary.json';
+  const g = JSON.parse(fs.readFileSync(path.join(__dirname, gfile), 'utf8'));
+  console.log('용어집 파일:', gfile);
+  if (g.context) GLOSSARY += `\n\nMeeting context: ${g.context}`;
   const lines = (g.terms || []).map(t => `- ${t.ko} <-> ${t.en}`);
   if (lines.length) GLOSSARY += `\n\nGlossary (always use these exact renderings):\n${lines.join('\n')}`;
   if ((g.keep_as_is || []).length) GLOSSARY += `\n\nNames to keep unchanged (transliterate only if needed): ${g.keep_as_is.join(', ')}`;
