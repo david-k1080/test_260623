@@ -25,7 +25,9 @@
   .msg.self .bubble { background:var(--me); }
   #interim { min-height:28px; padding:4px 16px; color:var(--dim); font-size:15px; font-style:italic; }
   footer { padding:10px 16px max(14px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); display:flex; gap:10px; align-items:center; }
-  #mic { flex:1; padding:18px; font-weight:700; font-size:18px; }
+  #mic { flex:1; padding:18px; font-weight:700; font-size:18px; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:none; }
+  #modeBtn { width:auto; padding:4px 10px; font-size:14px; margin-right:6px; }
+  #modehint { font-size:12px; color:var(--dim); margin-top:6px; line-height:1.4; }
   #mic.on { background:#dc2626; border-color:#dc2626; animation:pulse 1.4s infinite; }
   @keyframes pulse { 50% { opacity:.75; } }
   .sz { width:54px; padding:14px 0; }
@@ -40,12 +42,18 @@
   <div><label>이름 / Name</label><input id="name" placeholder="예: 김대표 / John"></div>
   <div><label>내 언어 / My language</label>
     <select id="lang"><option value="ko">한국어 (Korean)</option><option value="en">English</option></select></div>
+  <div><label>대화 방식 / Mode</label>
+    <select id="mode">
+      <option value="free">🎙 프리토킹 – 자동으로 듣고 바로 통역 / Free talk (hands-free)</option>
+      <option value="ptt">🔘 버튼 누르고 말하기 / Push to talk</option>
+    </select>
+    <div id="modehint"></div></div>
   <button class="primary" id="go">입장 / Join</button>
   <div id="warn" style="color:#fbbf24;font-size:13px"></div>
 </div>
 
 <div id="app" class="hide">
-  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span><button id="sum" title="요약 / Summary" style="width:auto;padding:4px 10px;font-size:15px;margin-right:6px">📝</button><button id="dl" title="회의록 저장 / Save minutes" style="width:auto;padding:4px 10px;font-size:15px;margin-right:8px">💾</button><span id="status">●</span></span></header>
+  <header><div>방 <b id="rcode"></b> · <span id="roster"></span></div><span><button id="modeBtn" title="대화 방식 바꾸기 / Switch mode"></button><button id="sum" title="요약 / Summary" style="width:auto;padding:4px 10px;font-size:15px;margin-right:6px">📝</button><button id="dl" title="회의록 저장 / Save minutes" style="width:auto;padding:4px 10px;font-size:15px;margin-right:8px">💾</button><span id="status">●</span></span></header>
   <div id="feed"></div>
   <div id="interim"></div>
   <div id="ov" class="hide" style="position:fixed;inset:0;background:var(--bg);z-index:10;display:flex;flex-direction:column">
@@ -67,15 +75,20 @@
 const $ = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const I18N = {
-  ko: { start:'🔇 음소거됨 (누르면 켜기)', stop:'🎤 듣는 중 (누르면 음소거)', me:'나', trans:'(번역)' },
-  en: { start:'🔇 Muted (tap to turn on)', stop:'🎤 Listening (tap to mute)', me:'Me', trans:'(translated)' }
+  ko: { start:'🔇 음소거됨 (누르면 켜기)', stop:'🎤 듣는 중 (누르면 음소거)', ptt:'🎤 누르고 말하세요', pttOn:'🔴 말하는 중… (손을 떼면 통역)', me:'나', trans:'(번역)', free:'🎙 자동', btn:'🔘 버튼',
+    hintFree:'입장하면 마이크가 자동으로 켜지고, 누구든 말하면 바로 통역됩니다. 폰을 입 가까이 두세요.', hintPtt:'버튼을 누르고 있는 동안만 듣고, 손을 떼면 바로 통역됩니다. (노트북은 스페이스바)' },
+  en: { start:'🔇 Muted (tap to turn on)', stop:'🎤 Listening (tap to mute)', ptt:'🎤 Hold to talk', pttOn:'🔴 Speaking… (release to send)', me:'Me', trans:'(translated)', free:'🎙 Auto', btn:'🔘 Button',
+    hintFree:'The mic turns on automatically after you join; whatever you say is interpreted right away. Keep your phone close to your mouth.', hintPtt:'Hold the button while you speak and release to send. (Space bar on a laptop)' }
 };
 let summaryFile = 'summary.md', autoTried = false;
 let ws, me = {}, rec, micOn = false, wake, fs = 22, sttMode = 'browser', audio = null;
+let mode = 'free', talking = false, talkUntil = 0;
 
 // 저장된 값 복원
 try { const s = JSON.parse(localStorage.getItem('li') || '{}');
-  if (s.name) $('name').value = s.name; if (s.lang) $('lang').value = s.lang; if (s.room) $('room').value = s.room; } catch {}
+  if (s.name) $('name').value = s.name; if (s.lang) $('lang').value = s.lang; if (s.room) $('room').value = s.room; if (s.mode) $('mode').value = s.mode; } catch {}
+const showHint = () => { const t = I18N[$('lang').value]; $('modehint').textContent = $('mode').value === 'ptt' ? t.hintPtt : t.hintFree; };
+$('mode').onchange = showHint; $('lang').onchange = showHint; showHint();
 const qr = new URLSearchParams(location.search).get('room'); if (qr) $('room').value = qr;
 if (!SR) $('warn').textContent = '⚠ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome(안드로이드) 또는 Safari(iOS)를 사용하세요. / Use Chrome (Android) or Safari (iOS).';
 
@@ -90,10 +103,11 @@ function prepareAudio() {
 }
 $('go').onclick = () => {
   prepareAudio();
-  me = { room:$('room').value.trim() || 'MEET', name:$('name').value.trim() || 'Guest', lang:$('lang').value };
+  me = { room:$('room').value.trim() || 'MEET', name:$('name').value.trim() || 'Guest', lang:$('lang').value, mode:$('mode').value };
+  mode = me.mode;
   localStorage.setItem('li', JSON.stringify(me));
   $('join').classList.add('hide'); $('app').classList.remove('hide');
-  $('mic').textContent = I18N[me.lang].start;
+  refreshMicUI();
   connect();
 };
 
@@ -106,12 +120,16 @@ function connect() {
     const m = JSON.parse(e.data);
     if (m.type === 'joined') {
       $('rcode').textContent = m.room; sttMode = m.stt;
+      if (sttMode !== 'deepgram' && pre) { pre.streamP.then(s => s.getTracks().forEach(t => t.stop())).catch(() => {}); try { pre.ctx.close(); } catch {} pre = null; }   // 내장 인식을 쓸 땐 미리 열어둔 마이크 해제
       if (micOn && sttMode === 'deepgram') ws.send(JSON.stringify({ type: 'mic_start' }));   // 재접속 후 음성 인식 다시 연결
-      else if (!micOn && !autoTried) { autoTried = true; setMic(true); }                      // 입장하면 자동으로 마이크 켜기
+      else if (!micOn && !autoTried) {
+        autoTried = true;
+        if (mode === 'free' || sttMode === 'deepgram') setMic(true);   // 프리토킹: 자동으로 마이크 켜기 / 버튼 방식(Deepgram): 마이크는 열어두고 누르는 동안만 전송
+      }
     }
     if (m.type === 'interim') $('interim').textContent = m.text ? '… ' + m.text : '';
     if (m.type === 'stt_error') { alert(m.message); setMic(false); }
-    if (m.type === 'roster') $('roster').textContent = m.roster.map(r => r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
+    if (m.type === 'roster') $('roster').textContent = m.roster.map(r => (r.mode === 'ptt' ? '🔘' : '🎙') + r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
     if (m.type === 'draft') showDraft(m);
     if (m.type === 'draft_clear') document.querySelector(`[data-draft="${CSS.escape(m.id)}"]`)?.remove();
     if (m.type === 'caption') addCaption(m);
@@ -137,9 +155,11 @@ function showDraft(m) {
     const b = document.createElement('div'); b.className = 'bubble';
     el.append(who, b); $('feed').append(el);
   }
+  el.dataset.t = Date.now();
   el.querySelector('.bubble').textContent = m.text;
   $('feed').scrollTop = $('feed').scrollHeight;
 }
+setInterval(() => document.querySelectorAll('.msg.draft').forEach(e => { if (Date.now() - Number(e.dataset.t || 0) > 12000) e.remove(); }), 3000);   // 안전장치: 12초 넘게 갱신 없는 초안은 제거
 function addCaption(m) {
   if (m.replaces) {                                   // 초안이 있으면 같은 자리에서 확정 번역으로 교체
     const d = document.querySelector(`[data-draft="${CSS.escape(m.replaces)}"]`);
@@ -178,7 +198,7 @@ function startRec() {
     }
     if (interim) $('interim').textContent = '… ' + interim;
   };
-  rec.onend = () => { if (micOn) try { rec.start(); } catch {} };   // 끊기면 자동 재시작
+  rec.onend = () => { if (micOn && mode === 'free') try { rec.start(); } catch {} };   // 끊기면 자동 재시작
   rec.onerror = e => { if (e.error === 'not-allowed') { micOn = false; setMic(false); alert('마이크 권한을 허용해주세요 / Allow microphone'); } };
   rec.start();
 }
@@ -215,6 +235,7 @@ async function startAudio() {
   let lvlMax = 0, lvlN = 0;
   node.port.onmessage = e => {
     if (ws.readyState !== 1) return;
+    if (mode === 'ptt' && !talking && Date.now() > talkUntil) return;   // 버튼 방식: 누르고 있는 동안만 전송
     ws.send(e.data);
     // 내 마이크의 음량을 서버에 알려줌 → 방 안의 여러 폰 중 '가장 가까이서 말한 폰'만 통역 (옆 사람 목소리 중복 방지)
     const a = new Int16Array(e.data); let s = 0, n = 0;
@@ -233,20 +254,57 @@ function stopAudio() {
   audio.node.disconnect(); audio.stream.getTracks().forEach(t => t.stop()); audio.ctx.close(); audio = null;
 }
 
+function refreshMicUI() {
+  const t = I18N[me.lang || 'ko'], b = $('mic');
+  if (mode === 'ptt') { b.textContent = talking ? t.pttOn : t.ptt; b.classList.toggle('on', talking); }
+  else { b.textContent = micOn ? t.stop : t.start; b.classList.toggle('on', micOn); }
+  $('modeBtn').textContent = mode === 'ptt' ? t.btn : t.free;
+}
 async function setMic(on) {
-  micOn = on; $('mic').classList.toggle('on', on);
-  $('mic').textContent = on ? I18N[me.lang].stop : I18N[me.lang].start;
+  micOn = on; refreshMicUI();
   if (on) {
     try {
       if (sttMode === 'deepgram') await startAudio(); else startRec();
       try { wake = await navigator.wakeLock?.request('screen'); } catch {}
-    } catch (e) { micOn = false; $('mic').classList.remove('on'); $('mic').textContent = I18N[me.lang].start; alert('마이크를 시작할 수 없습니다 / Cannot start microphone: ' + e.message); }
+    } catch (e) { micOn = false; refreshMicUI(); alert('마이크를 시작할 수 없습니다 / Cannot start microphone: ' + e.message); }
   } else {
     if (sttMode === 'deepgram') stopAudio(); else rec?.stop();
     $('interim').textContent = ''; wake?.release?.();
   }
 }
-$('mic').onclick = () => setMic(!micOn);
+
+// ---- 버튼 누르고 말하기 ----
+function pttDown() {
+  if (mode !== 'ptt' || talking) return;
+  talking = true; refreshMicUI();
+  if (sttMode !== 'deepgram') startRec();                 // 내장 인식: 누르는 동안만 인식
+  else if (!micOn) setMic(true);                          // 마이크가 아직 안 열려 있으면 열기
+}
+function pttUp() {
+  if (!talking) return;
+  talking = false; refreshMicUI();
+  if (sttMode === 'deepgram') {
+    talkUntil = Date.now() + 300;                         // 끝말이 잘리지 않게 0.3초 더 전송
+    setTimeout(() => ws.readyState === 1 && ws.send(JSON.stringify({ type: 'ptt_end' })), 330);
+  } else rec?.stop();
+}
+$('mic').addEventListener('pointerdown', e => { if (mode === 'ptt') { e.preventDefault(); $('mic').setPointerCapture?.(e.pointerId); pttDown(); } });
+['pointerup', 'pointercancel'].forEach(ev => $('mic').addEventListener(ev, () => pttUp()));
+$('mic').addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('keydown', e => { if (e.code === 'Space' && !e.repeat && mode === 'ptt' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || '')) { e.preventDefault(); pttDown(); } });
+addEventListener('keyup', e => { if (e.code === 'Space' && mode === 'ptt') pttUp(); });
+$('mic').onclick = () => { if (mode === 'free') setMic(!micOn); };
+
+// ---- 모드 전환 (화면 위쪽 버튼) ----
+$('modeBtn').onclick = () => {
+  const next = mode === 'free' ? 'ptt' : 'free';
+  talking = false; mode = next; me.mode = next;
+  try { localStorage.setItem('li', JSON.stringify(me)); } catch {}
+  if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'set_mode', mode: next }));
+  if (sttMode !== 'deepgram') { if (next === 'ptt') { if (micOn) setMic(false); } else if (!micOn) setMic(true); }   // 내장 인식은 모드에 따라 켜고 끔
+  else if (!micOn) setMic(true);                                                                                    // Deepgram은 마이크를 열어두고 전송만 제어
+  refreshMicUI();
+};
 $('sum').onclick = () => { if (ws.readyState !== 1) return; $('sum').disabled = true; $('sum').textContent = '⏳'; ws.send(JSON.stringify({ type: 'summarize' })); };
 $('ovclose').onclick = () => $('ov').classList.add('hide');
 $('ovcopy').onclick = async () => { try { await navigator.clipboard.writeText($('ovtext').textContent); $('ovcopy').textContent = '✔'; setTimeout(() => $('ovcopy').textContent = '📋 복사 / Copy', 1200); } catch { alert('복사할 수 없습니다. 저장을 사용하세요.'); } };

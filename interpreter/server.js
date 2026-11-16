@@ -203,7 +203,7 @@ Rules:
 
 const send = (ws, obj) => ws.readyState === 1 && ws.send(JSON.stringify(obj));
 const broadcastRoster = room => {
-  const roster = [...room.clients].map(c => ({ name: c.meta.name, lang: c.meta.lang }));
+  const roster = [...room.clients].map(c => ({ name: c.meta.name, lang: c.meta.lang, mode: c.meta.mode }));
   room.clients.forEach(c => send(c, { type: 'roster', roster }));
 };
 
@@ -231,6 +231,7 @@ function rivalCheck(ws, since) {
   const now = Date.now();
   ws.levels = ws.levels.filter(x => now - x.t < 15000);
   const mine = topMean(ws.levels, since);
+  if (ws.meta.mode === 'ptt') return { lost: false, mine, rivals: [], louder: null };   // 버튼을 누른 사람은 항상 우선
   const rivals = room ? [...room.clients].filter(c => c !== ws && c.stt && c.levels?.length) : [];
   if (!(mine > 0 && rivals.length)) return { lost: false, mine, rivals, louder: null };
   let louder = null, lv = -1;
@@ -239,10 +240,15 @@ function rivalCheck(ws, since) {
   return { lost, mine, rivals, louder: lost ? louder : null };
 }
 function allowUtterance(ws, text, since) {
-  if (!ARBITRATE) return true;
+  if (!ARBITRATE && ws.meta.mode !== 'ptt') return true;
   const room = rooms.get(ws.meta.code); if (!room) return true;
   const now = Date.now();
   const r = rivalCheck(ws, since);
+  if (ws.meta.mode === 'ptt') {                       // 버튼 방식: 중재/중복 검사 없이 통과, 다른 폰의 같은 문장만 걸러내도록 기록
+    room.recent = (room.recent || []).filter(x => now - x.t < 5000);
+    room.recent.push({ t: now, id: ws.id, text });
+    return true;
+  }
   if (r.rivals.length && r.mine > 0) {
     console.log(`[중재] ${ws.meta.name} ${r.mine.toFixed(3)} vs ` + r.rivals.map(c => `${c.meta.name} ${topMean(c.levels, since).toFixed(3)}`).join(', ') + (r.lost ? ` → 제외 (${r.louder.meta.name}이(가) 더 크게 들음)` : ' → 통과'));
     if (r.lost) return false;
@@ -317,7 +323,7 @@ function openDeepgram(ws, attempt = 0) {
       if (!st.utterStart) { st.utterStart = Date.now() - 800; st.draftId = `d${ws.id}-${Date.now()}`; st.lastDraftText = ''; }
       if (!m.is_final) { const cur = (st.buf + ' ' + t).trim(); maybeDraft(ws, st, cur); return send(ws, { type: 'interim', text: cur }); }
       st.buf = (st.buf + ' ' + t).trim();
-      if (m.speech_final || st.buf.length > 220) flushStt(ws); else { maybeDraft(ws, st, st.buf); send(ws, { type: 'interim', text: st.buf }); }
+      if (m.speech_final || m.from_finalize || st.buf.length > 220) { clearTimeout(st.finTimer); flushStt(ws); } else { maybeDraft(ws, st, st.buf); send(ws, { type: 'interim', text: st.buf }); }
     } else if (m.type === 'UtteranceEnd') flushStt(ws);
   });
   dg.on('close', () => {
@@ -327,8 +333,14 @@ function openDeepgram(ws, attempt = 0) {
   });
   dg.on('error', e => { if (!st.opened) return; console.error('[STT] error', e.message); });
 }
+function clearDraft(ws, st) {                                  // 확정 없이 끝난 초안(마이크 끔·끊김 등)을 상대 화면에서 지움
+  const id = st.draftId; st.draftId = null; st.utterStart = null; st.lastDraftText = '';
+  const room = ws.meta && rooms.get(ws.meta.code);
+  if (id && room) room.clients.forEach(c => c.meta.lang !== ws.meta.lang && send(c, { type: 'draft_clear', id }));
+}
 function flushStt(ws) {
-  const st = ws.stt; if (!st || !st.buf) return;
+  const st = ws.stt; if (!st) return;
+  if (!st.buf) { if (st.draftId) clearDraft(ws, st); return; }
   const text = st.buf; st.buf = '';
   const since = (st.utterStart || Date.now() - 3000) - 200; st.utterStart = null;
   const draftId = st.draftId; st.draftId = null; st.lastDraftText = '';
@@ -385,7 +397,8 @@ wss.on('connection', ws => {
       const code = String(m.room || '').toUpperCase().slice(0, 12) || 'MEET';
       const lang = m.lang === 'en' ? 'en' : 'ko';
       const name = String(m.name || 'Guest').slice(0, 30);
-      ws.meta = { code, lang, name };
+      const mode = m.mode === 'ptt' ? 'ptt' : 'free';
+      ws.meta = { code, lang, name, mode };
       if (!rooms.has(code)) rooms.set(code, { code, clients: new Set(), history: [], log: [], participants: new Map(), startedAt: new Date() });
       const room = rooms.get(code);
       clearTimeout(room.expire);          // 재접속이면 같은 회의록 유지
@@ -396,6 +409,16 @@ wss.on('connection', ws => {
     }
     if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) { closeStt(ws); openDeepgram(ws, 0); }
     if (m.type === 'mic_stop') { closeStt(ws); ws.levels = []; }
+    if (m.type === 'set_mode' && ws.meta) {                      // 프리토킹 ↔ 버튼 방식 전환
+      ws.meta.mode = m.mode === 'ptt' ? 'ptt' : 'free';
+      const room = rooms.get(ws.meta.code); if (room) broadcastRoster(room);
+    }
+    if (m.type === 'ptt_end' && ws.stt?.dg?.readyState === 1) {  // 버튼에서 손을 뗌 → 남은 음성을 즉시 확정
+      const st = ws.stt;
+      try { st.dg.send(JSON.stringify({ type: 'Finalize' })); } catch {}
+      clearTimeout(st.finTimer);
+      st.finTimer = setTimeout(() => flushStt(ws), 900);        // Finalize 응답이 없을 때를 대비한 안전장치
+    }
     if (m.type === 'level' && typeof m.v === 'number') { ws.levels.push({ t: Date.now(), v: Math.min(1, Math.max(0, m.v)) }); if (ws.levels.length > 200) ws.levels.shift(); }
     if (m.type === 'summarize' && ws.meta) {
       const room = rooms.get(ws.meta.code);
