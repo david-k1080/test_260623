@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PT 코치</title>
+<style>
+:root{
+  --bg:#f6f4ef; --card:#ffffff; --ink:#1f2933; --sub:#6b7280; --line:#e6e2d8;
+  --accent:#2f6f5e; --accent-soft:#e3f0ec; --warm:#c9792b; --warm-soft:#fbeedd; --bad:#b4483a;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#14181a; --card:#1d2326; --ink:#e8ecee; --sub:#9aa5ab; --line:#2c3438;
+    --accent:#58b79e; --accent-soft:#1d3029; --warm:#e4a05a; --warm-soft:#33291d; --bad:#e07b6c;}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Pretendard","Noto Sans KR",system-ui,sans-serif;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:22px;margin:4px 0 2px} h2{font-size:17px;margin:0 0 10px}
+.muted{color:var(--sub);font-size:14px}
+.tabs{display:flex;gap:6px;margin:16px 0}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 16px;border-radius:999px;cursor:pointer;font-size:14px}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+textarea,input[type=number]{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:150px;resize:vertical}
+label{font-size:13px;color:var(--sub);display:block;margin-bottom:4px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.btn{border:0;border-radius:12px;padding:12px 20px;font-size:15px;cursor:pointer;background:var(--accent);color:#fff}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.stop{background:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.timer{font-size:56px;font-variant-numeric:tabular-nums;font-weight:600;text-align:center;letter-spacing:1px}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.gauge{position:relative;height:14px;border-radius:7px;background:linear-gradient(90deg,#d9b36a 0%,#7fc0a8 30%,#7fc0a8 65%,#d9b36a 100%);margin:6px 0}
+.gauge .pin{position:absolute;top:-4px;width:4px;height:22px;background:var(--ink);border-radius:2px;left:0;transition:left .4s}
+.live{min-height:90px;max-height:160px;overflow:auto;background:var(--bg);border-radius:10px;padding:10px;font-size:15px}
+.scriptbox{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px;max-height:220px;overflow:auto;font-size:16px}
+.scriptbox.hidden{filter:blur(8px);user-select:none}
+.good{background:var(--accent-soft);border-left:4px solid var(--accent);padding:10px 12px;border-radius:8px;margin:8px 0}
+.next{background:var(--warm-soft);border-left:4px solid var(--warm);padding:10px 12px;border-radius:8px;margin:8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--bg);border-radius:12px;padding:12px}
+.stat b{display:block;font-size:22px} .stat span{font-size:12px;color:var(--sub)}
+.hide{display:none}
+.breath{width:120px;height:120px;border-radius:50%;background:var(--accent-soft);border:3px solid var(--accent);margin:14px auto;display:flex;align-items:center;justify-content:center;font-size:15px;transition:transform 4s ease-in-out}
+svg text{fill:var(--sub);font-size:11px}
+table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+.del{background:none;border:0;color:var(--sub);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PT 코치</h1>
+  <div class="muted">경쟁 프리젠테이션, 떨려도 무너지지 않는 연습. 매번 한 가지만 좋아지면 충분합니다.</div>
+
+  <div class="tabs">
+    <button class="tab on" data-t="practice">연습</button>
+    <button class="tab" data-t="history">내 성장 기록</button>
+  </div>
+
+  <!-- 연습 -->
+  <div id="practice">
+    <div class="card" id="setup">
+      <h2>1. 준비</h2>
+      <label>발표 대본 (붙여넣기)</label>
+      <textarea id="script" placeholder="대본을 붙여넣으세요. 나중에는 키워드만 보고 하는 모드로 넘어갑니다."></textarea>
+      <div class="row" style="margin-top:10px">
+        <div style="width:150px"><label>목표 시간(분)</label><input type="number" id="target" min="1" max="60" value="5"></div>
+        <button class="btn ghost" id="breathBtn">호흡 먼저 (30초)</button>
+        <button class="btn" id="startBtn">리허설 시작</button>
+      </div>
+      <div id="breathBox" class="hide">
+        <div class="breath" id="breath">들이쉬기</div>
+        <div class="muted" style="text-align:center">4초 들이쉬고 → 6초 내쉬기. 내쉴 때 어깨 힘을 빼세요.</div>
+      </div>
+      <div class="muted" id="srWarn" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card hide" id="live">
+      <div class="timer" id="timer">00:00</div>
+      <div class="bar"><i id="prog"></i></div>
+      <div class="muted" style="margin:6px 0 2px">지금 속도 <span id="paceNum">-</span> (초록 구간이 듣기 좋은 속도)</div>
+      <div class="gauge"><div class="pin" id="pin"></div></div>
+      <div class="muted" style="margin:10px 0 4px">마이크 <span id="lvlTxt"></span></div>
+      <div class="bar"><i id="lvl"></i></div>
+      <div class="row" style="margin:12px 0">
+        <button class="btn ghost" id="hideBtn">대본 가리기</button>
+        <button class="btn stop" id="stopBtn">끝내기</button>
+      </div>
+      <div class="scriptbox" id="scriptView"></div>
+      <h2 style="margin-top:14px">내 말 (실시간 인식)</h2>
+      <div class="live" id="liveText"></div>
+    </div>
+
+    <div class="card hide" id="result"></div>
+  </div>
+
+  <!-- 기록 -->
+  <div id="history" class="hide"></div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const KEY='ptcoach_sessions_v1', SKEY='ptcoach_script_v1';
+const GOOD_LO=260, GOOD_HI=360;               // 분당 음절(공백 제외 글자 수) 듣기 좋은 구간
+const PAUSE_MIN=1.2, PAUSE_LONG=4;             // 쉼 기준(초)
+const FILLER=/^(어+|음+|으음+|아+|에+|그+|저+|뭐+|약간|막|그니까|그러니까|뭐랄까)[,.?!]*$/;
+
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}};
+const save=a=>{try{localStorage.setItem(KEY,JSON.stringify(a))}catch(e){}};
+try{ $('#script').value=localStorage.getItem(SKEY)||''; }catch(e){}
+
+/* 탭 */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  $('#practice').classList.toggle('hide',b.dataset.t!=='practice');
+  $('#history').classList.toggle('hide',b.dataset.t!=='history');
+  if(b.dataset.t==='history')renderHistory();
+});
+
+/* 음성 인식 지원 */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR)$('#srWarn').textContent='이 브라우저는 음성 인식을 지원하지 않아요. Chrome에서 열면 속도·군더더기 분석까지 됩니다. (시간과 쉼은 측정됩니다)';
+
+/* 호흡 */
+let breathT=null;
+$('#breathBtn').onclick=()=>{
+  const box=$('#breathBox'),c=$('#breath');
+  if(breathT){clearInterval(breathT);breathT=null;box.classList.add('hide');return}
+  box.classList.remove('hide');let n=0;
+  const step=()=>{const inh=n%10<4;c.textContent=inh?'들이쉬기':'내쉬기';c.style.transition=`transform ${inh?4:6}s ease-in-out`;c.style.transform=inh?'scale(1.4)':'scale(1)';n++;
+    if(n>30){clearInterval(breathT);breathT=null;c.textContent='좋아요';}};
+  // 1초 단위로 phase 전환: 0~3 들숨, 4~9 날숨
+  n=0;step();breathT=setInterval(()=>{n++;if(n%10===0||n%10===4)step();else if(n>=30){clearInterval(breathT);breathT=null;c.textContent='좋아요, 시작해볼까요'}},1000);
+};
+
+/* 리허설 상태 */
+let rec=null,stream=null,actx=null,an=null,timerI=null,lvlI=null;
+let t0=0,running=false,cum=[],base=0,lastTotal=0,fullText='',levelLog=[],hidden=false;
+
+$('#hideBtn').onclick=()=>{hidden=!hidden;$('#scriptView').classList.toggle('hidden',hidden);$('#hideBtn').textContent=hidden?'대본 보이기':'대본 가리기'};
+$('#startBtn').onclick=start;
+$('#stopBtn').onclick=()=>finish();
+
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
+const chars=t=>t.replace(/[\s.,!?·…~\-"'()]/g,'').length;
+
+async function start(){
+  if(breathT){clearInterval(breathT);breathT=null;$('#breathBox').classList.add('hide')}
+  try{localStorage.setItem(SKEY,$('#script').value)}catch(e){}
+  try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ $('#srWarn').textContent='마이크 권한이 필요해요. 주소창의 자물쇠에서 마이크를 허용해 주세요.'; return; }
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  const src=actx.createMediaStreamSource(stream); an=actx.createAnalyser(); an.fftSize=1024; src.connect(an);
+  cum=[[0,0]];base=0;lastTotal=0;fullText='';levelLog=[];running=true;hidden=false;
+  $('#hideBtn').textContent='대본 가리기';$('#scriptView').classList.remove('hidden');
+  $('#scriptView').textContent=$('#script').value||'(대본 없이 자유 발표)';
+  $('#liveText').textContent='';$('#paceNum').textContent='-';
+  $('#setup').classList.add('hide');$('#result').classList.add('hide');$('#live').classList.remove('hide');
+  t0=performance.now();
+  timerI=setInterval(tick,200);
+  const buf=new Float32Array(an.fftSize);
+  lvlI=setInterval(()=>{an.getFloatTimeDomainData(buf);let s=0;for(const v of buf)s+=v*v;const rms=Math.sqrt(s/buf.length);
+    levelLog.push([(performance.now()-t0)/1000,rms]);
+    $('#lvl').style.width=Math.min(100,rms*600)+'%';},100);
+  if(SR)startSR();
+}
+
+function startSR(){
+  rec=new SR();rec.lang='ko-KR';rec.continuous=true;rec.interimResults=true;
+  rec.onresult=ev=>{
+    let txt='';for(let i=0;i<ev.results.length;i++)txt+=ev.results[i][0].transcript+' ';
+    const total=base+chars(txt);lastTotal=total;
+    const t=(performance.now()-t0)/1000;cum.push([t,total]);
+    fullText=(rec._prev||'')+txt;
+    const el=$('#liveText');el.textContent=fullText;el.scrollTop=el.scrollHeight;
+    // 현재 속도: 최근 10초
+    const p=paceAt(t-10,t);if(p!=null){$('#paceNum').textContent=Math.round(p)+'자/분';$('#pin').style.left=Math.max(0,Math.min(100,(p-120)/(500-120)*100))+'%'}
+  };
+  rec.onend=()=>{ if(running){ base=lastTotal; rec._prev=fullText; try{rec.start()}catch(e){} } };
+  rec.onerror=e=>{ if(e.error==='not-allowed')$('#liveText').textContent='음성 인식 권한이 거부됐어요.'; };
+  rec._prev='';
+  try{rec.start()}catch(e){}
+}
+function cumAt(t){let v=0;for(const [tt,c] of cum){if(tt<=t)v=c;else break}return v}
+function paceAt(a,b){a=Math.max(0,a);if(b-a<3)return null;const d=cumAt(b)-cumAt(a);return d<=0?null:d/(b-a)*60}
+
+function tick(){
+  const s=(performance.now()-t0)/1000,tg=(+$('#target').value||5)*60;
+  $('#timer').textContent=fmt(s);$('#prog').style.width=Math.min(100,s/tg*100)+'%';
+  $('#prog').style.background=s>tg?'var(--warm)':'var(--accent)';
+}
+
+function finish(){
+  if(!running)return;running=false;
+  const dur=(performance.now()-t0)/1000;
+  clearInterval(timerI);clearInterval(lvlI);
+  try{rec&&rec.stop()}catch(e){}
+  stream&&stream.getTracks().forEach(t=>t.stop());actx&&actx.close();
+  const m=analyze(dur);
+  const all=load();m.id=Date.now();all.push(m);save(all);
+  renderResult(m,all);
+}
+
+/* 분석 */
+function analyze(dur){
+  const tg=(+$('#target').value||5)*60;
+  // 쉼: 소음 바닥 보정 후 무음 구간
+  const lv=levelLog.map(x=>x[1]).slice(0,8).sort((a,b)=>a-b);
+  const floor=lv.length?lv[Math.floor(lv.length/2)]:0.005;
+  const thr=Math.max(0.012,floor*2.8);
+  const pauses=[];let sil=null;
+  for(const [t,r] of levelLog){
+    if(r<thr){if(sil==null)sil=t}
+    else if(sil!=null){const d=t-sil;if(d>=PAUSE_MIN&&sil>2)pauses.push({at:sil,len:d});sil=null}
+  }
+  const goodPauses=pauses.filter(p=>p.len<PAUSE_LONG).length;
+  const longPauses=pauses.filter(p=>p.len>=PAUSE_LONG).length;
+  // 속도 시리즈(10초 창)
+  const series=[];
+  for(let a=0;a+8<=dur;a+=10){const b=Math.min(a+10,dur);const p=paceAt(a,b);if(p!=null)series.push({t:a,p})}
+  const hasSR=cum.length>1;
+  const total=lastTotal;
+  const avg=hasSR&&dur>5?total/dur*60:null;
+  let sd=null,cv=null;
+  if(series.length>=3){const mu=series.reduce((s,x)=>s+x.p,0)/series.length;sd=Math.sqrt(series.reduce((s,x)=>s+(x.p-mu)**2,0)/series.length);cv=sd/mu}
+  const openP=paceAt(0,Math.min(60,dur));
+  // 군더더기
+  const toks=fullText.split(/\s+/).filter(Boolean);
+  const fillers=toks.filter(w=>FILLER.test(w)).length;
+  const fpm=dur>20?fillers/(dur/60):0;
+  // 대본 포함률
+  const sc=$('#script').value;let cover=null;
+  if(sc.trim()&&hasSR){
+    const st=[...new Set(sc.split(/[\s.,!?]+/).filter(w=>w.length>=2))];
+    const sp=fullText;const hit=st.filter(w=>sp.includes(w.slice(0,Math.max(2,w.length-1)))).length;
+    cover=st.length?hit/st.length:null;
+  }
+  return{date:new Date().toISOString(),dur,target:tg,pauses:pauses.length,goodPauses,longPauses,series,hasSR,avg,cv,openP,fillers,fpm,cover,words:toks.length};
+}
+
+/* 결과: 잘한 점 먼저, 개선은 1개만 */
+function renderResult(m,all){
+  const prev=all.length>1?all[all.length-2]:null;
+  const good=[];
+  good.push('끝까지 해냈어요. 이게 가장 중요한 첫 걸음입니다.');
+  const diff=(m.dur-m.target)/m.target;
+  if(Math.abs(diff)<=0.1)good.push(`시간을 정확히 지켰어요 (목표 ${fmt(m.target)} / 실제 ${fmt(m.dur)}).`);
+  if(m.avg!=null&&m.avg>=GOOD_LO&&m.avg<=GOOD_HI)good.push(`평균 속도 ${Math.round(m.avg)}자/분, 듣기 편한 속도예요.`);
+  if(m.cv!=null&&m.cv<0.22)good.push('속도가 일정했어요. 안정감 있게 들립니다.');
+  if(m.hasSR&&m.fpm<3)good.push(`군더더기 말이 적어요 (분당 ${m.fpm.toFixed(1)}회).`);
+  if(m.goodPauses>=3)good.push(`의도적인 쉼이 ${m.goodPauses}번 있었어요. 쉼은 자신감의 신호입니다.`);
+  if(m.cover!=null&&m.cover>=0.7)good.push(`대본의 핵심 단어를 ${Math.round(m.cover*100)}% 짚었어요.`);
+  if(prev){
+    if(m.hasSR&&prev.hasSR&&m.fpm<prev.fpm-0.5)good.push('지난번보다 군더더기 말이 줄었어요.');
+    if(m.cv!=null&&prev.cv!=null&&m.cv<prev.cv-0.03)good.push('지난번보다 속도가 더 안정됐어요.');
+  }
+  // 고칠 것 1개
+  let next=null;
+  if(m.openP!=null&&m.avg&&m.openP>m.avg*1.15)next='오프닝이 평소보다 빨랐어요. 긴장하면 누구나 그래요. 다음엔 <b>첫 문장을 말하고 숨 한 번</b> 쉬고 시작해 보세요.';
+  else if(m.avg!=null&&m.avg>GOOD_HI)next='전체적으로 조금 빨라요. 다음엔 <b>문장 끝에서 반 박자만</b> 멈춰 보세요.';
+  else if(m.avg!=null&&m.avg<GOOD_LO)next='속도가 느긋해요. 시간이 부족하다면 <b>가장 덜 중요한 문장 하나</b>를 덜어내 보세요.';
+  else if(m.longPauses>0)next=`${m.longPauses}번 4초 이상 막힌 구간이 있었어요. 막히면 <b>"정리하면…"</b> 같은 복구 문장으로 이어가는 연습을 해보세요.`;
+  else if(m.hasSR&&m.fpm>=5)next='군더더기("어, 음")가 조금 있어요. 말하기 전 <b>무음으로 한 박자 쉬는</b> 습관으로 바꿔 보세요.';
+  else if(Math.abs(diff)>0.1)next=diff>0?'목표 시간을 넘겼어요. 가장 긴 파트에서 <b>한 문장만</b> 줄여 보세요.':'목표 시간보다 짧았어요. 핵심 파트에 <b>예시 하나</b>를 더해 보세요.';
+  else next='지금 흐름이 좋아요. 다음엔 <b>대본을 가리고</b> 한 번 해보세요.';
+
+  const el=$('#result');el.classList.remove('hide');
+  el.innerHTML=`
+   <h2>2. 오늘의 리허설</h2>
+   <h3 style="margin:8px 0 4px;font-size:15px">잘한 점</h3>
+   ${good.map(g=>`<div class="good">${g}</div>`).join('')}
+   <h3 style="margin:14px 0 4px;font-size:15px">다음에 딱 하나만</h3>
+   <div class="next">${next}</div>
+   <div class="grid" style="margin:14px 0">
+     <div class="stat"><b>${fmt(m.dur)}</b><span>발표 시간 (목표 ${fmt(m.target)})</span></div>
+     <div class="stat"><b>${m.avg!=null?Math.round(m.avg):'-'}</b><span>평균 속도 (자/분)</span></div>
+     <div class="stat"><b>${m.hasSR?m.fillers:'-'}</b><span>군더더기 말(회)</span></div>
+     <div class="stat"><b>${m.goodPauses}</b><span>의도적인 쉼(회)</span></div>
+   </div>
+   ${m.series.length>=2?`<h3 style="margin:10px 0 4px;font-size:15px">시간에 따른 속도 (초록 띠가 듣기 좋은 속도)</h3>${paceChart(m.series,m.dur)}`:''}
+   <div class="row" style="margin-top:12px"><button class="btn" id="againBtn">한 번 더</button><button class="btn ghost" id="toHist">성장 기록 보기</button></div>`;
+  $('#live').classList.add('hide');
+  $('#againBtn').onclick=()=>{$('#result').classList.add('hide');$('#setup').classList.remove('hide')};
+  $('#toHist').onclick=()=>document.querySelector('[data-t=history]').click();
+}
+
+/* 차트 */
+function paceChart(series,dur){
+  const W=760,H=170,L=36,R=8,T=8,B=22,ymin=100,ymax=500;
+  const x=t=>L+t/dur*(W-L-R), y=p=>T+(1-(Math.min(ymax,Math.max(ymin,p))-ymin)/(ymax-ymin))*(H-T-B);
+  const pts=series.map(s=>`${x(s.t+5).toFixed(1)},${y(s.p).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="속도 변화">
+   <rect x="${L}" y="${y(GOOD_HI)}" width="${W-L-R}" height="${y(GOOD_LO)-y(GOOD_HI)}" fill="var(--accent-soft)"/>
+   <text x="2" y="${y(GOOD_HI)+4}">${GOOD_HI}</text><text x="2" y="${y(GOOD_LO)+4}">${GOOD_LO}</text>
+   <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+   ${series.map(s=>`<circle cx="${x(s.t+5)}" cy="${y(s.p)}" r="3.5" fill="var(--accent)"/>`).join('')}
+   <text x="${L}" y="${H-4}">0:00</text><text x="${W-R-30}" y="${H-4}">${fmt(dur)}</text></svg>`;
+}
+function trend(vals,label,fmtv,lowerBetter){
+  if(vals.length<2)return `<div class="stat"><b>${vals.length?fmtv(vals[0]):'-'}</b><span>${label}</span></div>`;
+  const W=200,H=50,mn=Math.min(...vals),mx=Math.max(...vals),r=(mx-mn)||1;
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1)*(W-8)+4).toFixed(1)},${(H-6-(v-mn)/r*(H-12)).toFixed(1)}`).join(' ');
+  const d=vals[vals.length-1]-vals[0];const better=lowerBetter?d<0:d>0;
+  return `<div class="stat"><b>${fmtv(vals[vals.length-1])}</b><span>${label}</span>
+   <svg viewBox="0 0 ${W} ${H}" width="100%"><polyline points="${pts}" fill="none" stroke="${better?'var(--accent)':'var(--warm)'}" stroke-width="2.5"/></svg></div>`;
+}
+
+/* 기록 / 대시보드 */
+function renderHistory(){
+  const all=load(),el=$('#history');
+  if(!all.length){el.innerHTML='<div class="card">아직 기록이 없어요. 첫 리허설이 가장 큰 도약입니다.</div>';return}
+  const mins=all.reduce((s,m)=>s+m.dur,0)/60;
+  const days=[...new Set(all.map(m=>m.date.slice(0,10)))].sort();
+  let streak=1;for(let i=days.length-1;i>0;i--){const d=(new Date(days[i])-new Date(days[i-1]))/864e5;if(d===1)streak++;else break}
+  const sr=all.filter(m=>m.hasSR);
+  const first=sr[0],last=sr[sr.length-1];
+  let growth='';
+  if(sr.length>=2){
+    const bits=[];
+    if(last.fpm<first.fpm)bits.push(`군더더기 분당 ${first.fpm.toFixed(1)}회 → ${last.fpm.toFixed(1)}회`);
+    if(first.cv!=null&&last.cv!=null&&last.cv<first.cv)bits.push(`속도 흔들림 ${Math.round(first.cv*100)}% → ${Math.round(last.cv*100)}%`);
+    if(bits.length)growth=`<div class="good"><b>첫 연습 대비 성장:</b> ${bits.join(' · ')}</div>`;
+  }
+  el.innerHTML=`
+   <div class="card"><h2>내 성장</h2>
+    <div class="grid"><div class="stat"><b>${all.length}회</b><span>누적 리허설</span></div>
+    <div class="stat"><b>${Math.round(mins)}분</b><span>누적 연습 시간</span></div>
+    <div class="stat"><b>${streak}일</b><span>연속 연습</span></div></div>
+    ${growth}</div>
+   <div class="card"><h2>추이 <span class="muted">(초록 = 좋아지는 중)</span></h2>
+    <div class="grid">
+     ${trend(sr.map(m=>m.fpm),'군더더기 (분당)',v=>v.toFixed(1),true)}
+     ${trend(sr.filter(m=>m.cv!=null).map(m=>m.cv*100),'속도 흔들림 (%)',v=>Math.round(v)+'%',true)}
+     ${trend(sr.filter(m=>m.avg).map(m=>m.avg),'평균 속도 (자/분)',v=>Math.round(v),false)}
+     ${trend(all.map(m=>m.goodPauses),'의도적 쉼 (회)',v=>v,false)}
+    </div></div>
+   <div class="card"><h2>리허설 목록</h2><table><tr><th>날짜</th><th>시간</th><th>속도</th><th>군더더기</th><th></th></tr>
+    ${[...all].reverse().map(m=>`<tr><td>${new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${fmt(m.dur)}</td><td>${m.avg?Math.round(m.avg):'-'}</td><td>${m.hasSR?m.fillers:'-'}</td><td><button class="del" data-id="${m.id}">삭제</button></td></tr>`).join('')}</table></div>`;
+  el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{save(load().filter(m=>String(m.id)!==b.dataset.id));renderHistory()});
+}
+})();
+</script>
+</body>
+</html>
