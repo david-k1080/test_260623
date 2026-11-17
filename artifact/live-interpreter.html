@@ -38,6 +38,7 @@
   .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 11px; font-size: 13px; font-weight: 500; }
   .btn:hover { border-color: var(--muted); }
   .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .btn[aria-pressed="true"] { background: var(--en-soft); border-color: var(--en); color: var(--en); }
   .btn.primary { background: var(--ko); border-color: var(--ko); color: #fff; }
   :root[data-theme="dark"] .btn.primary { color: #0e151d; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.primary { color: #0e151d; } }
@@ -121,13 +122,14 @@
   .guest-body.flip { transform: rotate(180deg); }
   .guest-line { font-size: clamp(26px, 6vw, 44px); line-height: 1.3; overflow-wrap: anywhere; }
   .guest-line small { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
-  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; z-index: 30; max-width: 90vw; }
+  .toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 56px); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; z-index: 30; max-width: 90vw; pointer-events: none; }   /* never covers or blocks the speaking buttons */
 </style>
 
 <div id="app">
   <header class="top">
     <div class="brand">Live Interpreter</div>
     <div class="tools">
+      <button class="btn" id="bVoice" type="button" aria-pressed="false" hidden>음성 읽기: 끔</button>
       <button class="btn" id="bGuest" type="button">상대편 화면</button>
       <button class="btn" id="bGloss" type="button">용어집</button>
       <button class="btn" id="bSum" type="button">요약</button>
@@ -151,6 +153,9 @@
       <div class="field"><span class="lab">대화 방식 / Mode</span>
         <div class="seg" id="segMode"><button type="button" data-v="free">프리토킹</button><button type="button" data-v="ptt">버튼 누르고 말하기</button></div>
         <span class="hint" id="modeHint"></span></div>
+      <div class="field"><span class="lab">음성 읽기 속도 / Voice speed</span>
+        <div class="seg" id="segRate"><button type="button" data-v="0.9">느리게</button><button type="button" data-v="1">보통</button><button type="button" data-v="1.2">빠르게</button></div>
+        <span class="hint" id="voiceHint">위쪽 "음성 읽기" 버튼을 켜면 번역을 목소리로 읽어줍니다. 마이크가 켜져 있는 동안에는 읽을 수 없어서, 버튼 방식(누르고 말하기)과 가장 잘 맞습니다.</span></div>
       <div class="field"><span class="lab">글자 크기 / Text size</span>
         <div class="row"><button class="btn" type="button" id="fsMinus">A−</button><button class="btn" type="button" id="fsPlus">A+</button>
         <label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="cOrig"> 원문도 작게 표시</label></div>
@@ -218,12 +223,13 @@ const DEFAULT_GLOSSARY = [
 const S = {
   name: store.get('name', ''), room: store.get('room', 'meet'), mic: store.get('mic', 'ko'), view: store.get('view', 'auto'),
   mode: store.get('mode', 'free'), fs: store.get('fs2', 26), showOrig: store.get('orig', true), drafts: store.get('drafts', true),
+  voice: store.get('voice', false), rate: String(store.get('rate', '1')),
   glossary: store.get('glossary', DEFAULT_GLOSSARY), ctx: store.get('ctx', ''),
   items: store.get('items', []).filter(i => i && typeof i.id === 'string'),
 };
 
 // ---------- capabilities (each may be null: the page still works without it) ----------
-let dict = null, smp = null, dls = null, lobby = null, R = null, unsubRoom = [], smpOK = true;
+let dict = null, smp = null, dls = null, tts = null, lobby = null, R = null, unsubRoom = [], smpOK = true;
 let listening = false, holdLang = null;
 const TAG = Math.random().toString(36).slice(2, 6);
 let seq = 0;
@@ -377,7 +383,7 @@ function commit(text, lang, id) {
   const send = () => R && R.emit('utt', { id, name: it.name, lang, text, tr: it.tr, t: it.t }).catch(() => {});
   if (!smp || !smpOK) { send(); return; }
   translate(text, lang, to, partial => { it.tr = partial; paint(it); })
-    .then(tr => { it.tr = tr; paint(it); persist(); send(); })
+    .then(tr => { it.tr = tr; paint(it); persist(); send(); enqueueSpeech(it); })
     .catch(e => { it.failed = true; paint(it); sampleError(e); send(); });
 }
 function onRemoteUtt(msg) {
@@ -393,15 +399,53 @@ function onRemoteUtt(msg) {
   const dup = S.items.find(x => x.id !== it.id && x.id.slice(10, 14) !== it.id.slice(10, 14) && now - (x.at || x.t) < 6000 && x.lang === it.lang && similar(x.text, it.text) >= 0.7);
   if (dup) { if (it.id < dup.id) { S.items = S.items.filter(x => x !== dup); removeEl(dup.id); } else return; }
   S.items.push(it); paint(it); persist();
+  if (it.tr) enqueueSpeech(it);
   const needsTr = SPLIT_OR_AUTO() || lang !== (S.view === 'en' ? 'en' : 'ko');
   if (!it.tr && needsTr && smp && smpOK) {                  // the sender could not translate: do it here
-    translate(it.text, lang, other(lang), p => { it.tr = p; paint(it); }).then(t => { it.tr = t; paint(it); persist(); }).catch(e => { it.failed = true; paint(it); sampleError(e, true); });
+    translate(it.text, lang, other(lang), p => { it.tr = p; paint(it); }).then(t => { it.tr = t; paint(it); persist(); enqueueSpeech(it); }).catch(e => { it.failed = true; paint(it); sampleError(e, true); });
   }
 }
 function onRemoteDraft(msg) {
   if (msg.sameTab) return;
   const d = msg.data; if (!d || typeof d.id !== 'string' || typeof d.text !== 'string') return;
   upsertDraft(d.id.slice(0, 40), String(d.name || 'Guest').slice(0, 30), d.lang === 'en' ? 'en' : 'ko', d.text.slice(0, 1200), typeof d.tr === 'string' ? d.tr.slice(0, 1600) : null, false);
+}
+
+// ---------- reading translations aloud (tts) ----------
+// The platform refuses to speak while the viewer is dictating, so lines wait in a short queue and play when the mic is idle.
+const VOICE = { ko: 'rounded', en: 'buttery' };           // two different voices tell you which way the sentence was translated
+let speechQ = [], speaking = false, ttsPauseUntil = 0;
+function speechFor(it) {
+  if (SPLIT_OR_AUTO()) return it.tr ? { text: it.tr, lang: other(it.lang) } : null;     // shared screen: voice the OTHER person's language
+  const L = S.view === 'en' ? 'en' : 'ko';
+  if (it.mine || it.lang === L) return null;                                            // personal screen: only what I need translated
+  const t = textFor(it, L); return t ? { text: t, lang: L } : null;
+}
+function enqueueSpeech(it) {
+  if (!S.voice || !tts) return;
+  const sp = speechFor(it); if (!sp) return;
+  speechQ.push(sp); if (speechQ.length > 3) speechQ.splice(0, speechQ.length - 3);       // never fall far behind the conversation
+  pumpSpeech();
+}
+async function pumpSpeech() {
+  if (speaking || !S.voice || !tts || !speechQ.length) return;
+  if (dict && dict.active()) return;                                                     // resumes from the idle event
+  const wait = ttsPauseUntil - Date.now();
+  if (wait > 0) { setTimeout(pumpSpeech, wait + 50); return; }
+  speaking = true; const sp = speechQ.shift(); let again = true;
+  try { await tts.speak(sp.text.slice(0, 1900), { voice: VOICE[sp.lang], language: sp.lang, rate: Number(S.rate) || 1 }); }
+  catch (e) {
+    const c = e && e.code; again = false;
+    if (c === 'busy') speechQ.unshift(sp);                                               // wait for the mic to go idle, never loop
+    else if (c === 'rate_limited') { ttsPauseUntil = Date.now() + 4000; speechQ.unshift(sp); setTimeout(pumpSpeech, 4100); }
+    else if (c === 'not_granted') { S.voice = false; store.set('voice', false); speechQ = []; syncVoice(); toast('음성 읽기 권한이 꺼져 있습니다. 권한 메뉴에서 켜 주세요.'); }
+    else again = true;                                                                   // interrupted or unplayable: skip this line
+  } finally { speaking = false; }
+  if (again) pumpSpeech();
+}
+function stopSpeech() { speechQ = []; if (tts) { try { tts.stop(); } catch {} } }
+function syncVoice() {
+  const b = $('bVoice'); b.hidden = !tts; b.setAttribute('aria-pressed', String(!!S.voice)); b.textContent = S.voice ? '음성 읽기: 켬' : '음성 읽기: 끔';
 }
 
 // ---------- dictation ----------
@@ -439,7 +483,7 @@ function dictError(e) {
   else if (c === 'rate_limited') toast('음성 입력 요청이 많습니다. 잠시 후 다시 눌러 주세요.');
   else if (c !== 'dismissed' && c !== 'stopped') toast('음성 입력을 시작하지 못했습니다.');
 }
-function startDict(lang) { $('setup').open = false; return dict.start({ language: lang }).catch(dictError); }   // must stay synchronous inside the click handler
+function startDict(lang) { $('setup').open = false; stopSpeech(); return dict.start({ language: lang }).catch(dictError); }   // must stay synchronous inside the click handler
 function stopDict(lang) { dict.stop().then(() => flush(lang)).catch(() => flush(lang)); }
 
 // ---------- controls ----------
@@ -478,6 +522,7 @@ function bindDict() {
   dict.onState(({ state, reason }) => {
     listening = state !== 'idle'; updateMicUI();
     if (state === 'idle') {
+      setTimeout(pumpSpeech, 150);
       if (curText()) flush(bufLang);
       if (reason === 'hidden' || reason === 'time_limit') toast('마이크가 꺼졌습니다. 버튼을 눌러 다시 시작하세요.');
       else if (reason === 'upstream_error') toast('음성 인식 연결이 끊겼습니다. 다시 시작하세요.');
@@ -591,9 +636,9 @@ function init() {
   parseGlossary(S.glossary);
   document.documentElement.style.setProperty('--fs', S.fs + 'px');
   $('iName').value = S.name; $('iRoom').value = S.room; $('cOrig').checked = S.showOrig; $('cDraft').checked = S.drafts;
-  syncs = [seg('segMic', 'mic', l => { setMicLang(l); syncSettings(); }), seg('quickMic', 'mic', l => { setMicLang(l); syncSettings(); }), seg('segDisp', 'view', () => { applyView(); repaintAll(); renderGuest(); presence(); syncSettings(); }),
+  syncs = [seg('segRate', 'rate', () => {}), seg('segMic', 'mic', l => { setMicLang(l); syncSettings(); }), seg('quickMic', 'mic', l => { setMicLang(l); syncSettings(); }), seg('segDisp', 'view', () => { applyView(); repaintAll(); renderGuest(); presence(); syncSettings(); }),
     seg('segMode', 'mode', () => { modeHint(); if (dict && dict.active()) stopDict(bufLang); holdLang = null; renderControls(); })];
-  syncSettings(); modeHint(); applyView();
+  syncSettings(); modeHint(); applyView(); syncVoice();
   if (S.name) $('setup').open = false; else $('setup').open = true;
   $('iName').addEventListener('input', e => { S.name = e.target.value.trim(); store.set('name', S.name); presence(); });
   let rt; $('iRoom').addEventListener('input', e => { S.room = e.target.value.trim(); store.set('room', S.room); clearTimeout(rt); rt = setTimeout(joinRoom, 700); });
@@ -606,6 +651,12 @@ function init() {
     if (!S.items.length) { toast('지울 기록이 없습니다.'); return; }
     if ($('bClear').dataset.arm !== '1') { $('bClear').dataset.arm = '1'; $('bClear').textContent = '정말 지울까요? 한 번 더 누르세요'; setTimeout(() => { $('bClear').dataset.arm = ''; $('bClear').textContent = '대화 기록 지우기'; }, 4000); return; }
     S.items = []; persist(); els.forEach(el => el.remove()); els.clear(); drafts.clear(); $('bClear').dataset.arm = ''; $('bClear').textContent = '대화 기록 지우기'; showEmpty(); toast('기록을 지웠습니다.');
+  });
+  $('bVoice').addEventListener('click', () => {
+    if (!tts) return;
+    S.voice = !S.voice; store.set('voice', S.voice); syncVoice();
+    if (S.voice) { toast(S.mode === 'free' ? '음성 읽기를 켰습니다. 마이크로 듣는 동안에는 읽어주지 않고, 멈추면 읽어줍니다.' : '음성 읽기를 켰습니다. 버튼에서 손을 떼면 번역을 읽어줍니다.'); }
+    else stopSpeech();
   });
   $('bGuest').addEventListener('click', () => { open('ovGuest'); renderGuest(); });
   $('guestClose').addEventListener('click', () => close('ovGuest'));
@@ -638,9 +689,9 @@ function init() {
 async function initCaps() {
   const cl = window.claude;
   const get = async n => { try { return cl && cl.use ? await cl.use(n) : null; } catch { return null; } };
-  [dict, smp, dls, lobby] = await Promise.all([get('dictation'), get('sample'), get('downloads'), get('room')]);
+  [dict, smp, dls, tts, lobby] = await Promise.all([get('dictation'), get('sample'), get('downloads'), get('tts'), get('room')]);
   if (dict) bindDict();
-  renderControls(); showNotices();
+  syncVoice(); renderControls(); showNotices();
   joinRoom();
 }
 init(); initCaps();
