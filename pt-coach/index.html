@@ -48,6 +48,14 @@ label{font-size:13px;color:var(--sub);display:block;margin-bottom:4px}
 svg text{fill:var(--sub);font-size:11px}
 table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
 .del{background:none;border:0;color:var(--sub);cursor:pointer}
+.lvlsel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:6px 0 8px}
+.lvlsel label{display:block;border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink);font-size:14px;margin:0}
+.lvlsel input{margin-right:6px}
+.lvlsel label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.lvlsel small{display:block;color:var(--sub);font-size:12px;margin-top:2px}
+.banner{border-radius:12px;padding:12px 14px;margin:10px 0;font-size:15px;background:var(--warm-soft);border-left:4px solid var(--warm)}
+.banner.q{background:var(--accent-soft);border-left-color:var(--accent);font-size:17px}
+.banner button{margin-top:8px}
 </style>
 </head>
 <body>
@@ -66,6 +74,13 @@ table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;
       <h2>1. 준비</h2>
       <label>발표 대본 (붙여넣기)</label>
       <textarea id="script" placeholder="대본을 붙여넣으세요. 나중에는 키워드만 보고 하는 모드로 넘어갑니다."></textarea>
+      <label style="margin-top:12px">압박 단계 (낮은 단계부터 천천히 올려요)</label>
+      <div class="lvlsel">
+        <label><input type="radio" name="lvl" value="1" checked>1단계 · 연습<small>조용한 환경. 지표만 확인</small></label>
+        <label><input type="radio" name="lvl" value="2">2단계 · 긴장<small>객석 소음 + 발표 중 시간 단축 + 남은 시간 알림</small></label>
+        <label><input type="radio" name="lvl" value="3">3단계 · 실전<small>소음 더 잦게 + 시간 대폭 단축 + 돌발 질문(음성)</small></label>
+      </div>
+      <div class="muted" style="margin-bottom:8px">2~3단계는 소리가 나므로 <b>이어폰</b>을 끼면 측정이 정확해요.</div>
       <div class="row" style="margin-top:10px">
         <div style="width:150px"><label>목표 시간(분)</label><input type="number" id="target" min="1" max="60" value="5"></div>
         <button class="btn ghost" id="breathBtn">호흡 먼저 (30초)</button>
@@ -80,6 +95,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;
 
     <div class="card hide" id="live">
       <div class="timer" id="timer">00:00</div>
+      <div id="banner" class="banner hide"></div>
       <div class="bar"><i id="prog"></i></div>
       <div class="muted" style="margin:6px 0 2px">지금 속도 <span id="paceNum">-</span> (초록 구간이 듣기 좋은 속도)</div>
       <div class="gauge"><div class="pin" id="pin"></div></div>
@@ -140,6 +156,48 @@ $('#breathBtn').onclick=()=>{
 /* 리허설 상태 */
 let rec=null,stream=null,actx=null,an=null,timerI=null,lvlI=null;
 let t0=0,running=false,cum=[],base=0,lastTotal=0,fullText='',levelLog=[],hidden=false;
+let curTarget=300,level=1,pTimers=[],pEv={qs:[],sounds:0,cut:null},bannerTok=0;
+
+/* ===== 압박 모드 ===== */
+const QUESTIONS=['잠깐만요. 방금 말씀하신 수치의 근거가 뭔가요?','경쟁사 대비 우리 제안이 나은 점을 한 문장으로 말씀해 주시겠어요?','예산이 이십 퍼센트 줄어도 가능한가요?','일정이 현실적이라고 보시는 이유가 있나요?','이 방식이 실패하면 대안은 뭔가요?','지금까지 내용 중 가장 중요한 한 가지만 다시 말씀해 주세요.'];
+function showBanner(html,kind,ms){const el=$('#banner'),tok=++bannerTok;el.className='banner '+(kind||'');el.innerHTML=html;if(ms)setTimeout(()=>{if(tok===bannerTok)el.classList.add('hide')},ms);return tok}
+function hideBanner(){bannerTok++;$('#banner').classList.add('hide')}
+function noiseBuf(d){const b=actx.createBuffer(1,Math.max(1,Math.floor(actx.sampleRate*d)),actx.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;return b}
+function burst(t,d,type,f,q,g){const s=actx.createBufferSource();s.buffer=noiseBuf(d);const fl=actx.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const gn=actx.createGain();gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+0.02);gn.gain.exponentialRampToValueAtTime(0.0001,t+d);s.connect(fl);fl.connect(gn);gn.connect(actx.destination);s.start(t)}
+function tone(t,d,type,f0,f1,g,lp){const o=actx.createOscillator();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.linearRampToValueAtTime(f1,t+d);const fl=actx.createBiquadFilter();fl.type='lowpass';fl.frequency.value=lp;const gn=actx.createGain();gn.gain.setValueAtTime(0.0001,t);gn.gain.exponentialRampToValueAtTime(g,t+0.03);gn.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(fl);fl.connect(gn);gn.connect(actx.destination);o.start(t);o.stop(t+d+0.05)}
+const SOUNDS=[
+  t=>{burst(t,0.18,'bandpass',900,1.2,0.5);burst(t+0.26,0.14,'bandpass',900,1.2,0.4)},                 // 기침
+  t=>{for(let i=0;i<9;i++)burst(t+i*0.08,0.07,'highpass',3500,0.7,0.14)},                               // 종이 넘기는 소리
+  t=>{tone(t,0.6,'sawtooth',230,150,0.12,600)},                                                         // 의자 삐걱
+  t=>{for(let i=0;i<3;i++)tone(t+i*0.28,0.16,'square',120,120,0.12,500)}                                // 휴대폰 진동
+];
+function playSound(){const t=actx.currentTime+0.05;SOUNDS[Math.floor(Math.random()*SOUNDS.length)](t);pEv.sounds++}
+function askQuestion(used){
+  const pool=QUESTIONS.filter(q=>!used.includes(q));const text=pool[Math.floor(Math.random()*pool.length)]||QUESTIONS[0];used.push(text);
+  const q={at:(performance.now()-t0)/1000,text,ttsEnd:null,endedAt:null};pEv.qs.push(q);
+  const end=()=>{if(q.endedAt==null){q.endedAt=(performance.now()-t0)/1000;hideBanner()}};
+  showBanner(`<b>심사위원 질문</b><br>"${text}"<br><span class="muted">짧게 답한 뒤 발표로 돌아오세요. (답변은 30초 안에, 결론 → 근거 1개)</span><br><button class="btn" id="qDone">답변 끝, 발표 계속</button>`,'q');
+  $('#qDone').onclick=end;pTimers.push(setTimeout(()=>{if(running&&q.endedAt==null){end();showBanner('시간 관계상 발표를 계속해 주세요.','',3000)}},60000));
+  const fallback=setTimeout(()=>{if(q.ttsEnd==null)q.ttsEnd=(performance.now()-t0)/1000},7000);pTimers.push(fallback);
+  try{const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';u.onend=()=>{if(q.ttsEnd==null)q.ttsEnd=(performance.now()-t0)/1000};u.onerror=u.onend;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){q.ttsEnd=q.at+3}
+}
+function startPressure(){
+  pEv={origTarget:curTarget,sounds:0,cut:null,qs:[],warn1:false,over:false};
+  if(level<2)return;
+  const tg=curTarget,gap=level===3?[15,30]:[25,50];
+  const sched=()=>{const d=(gap[0]+Math.random()*(gap[1]-gap[0]))*1000;pTimers.push(setTimeout(()=>{if(!running)return;playSound();sched()},d))};sched();
+  const ratio=level===3?0.3:0.15;
+  pTimers.push(setTimeout(()=>{if(!running)return;const old=curTarget;curTarget=Math.round(old*(1-ratio));pEv.cut={at:(performance.now()-t0)/1000,from:old,to:curTarget};
+    showBanner(`<b>진행 안내</b> 일정이 밀려 발표 시간이 <b>${fmt(old)} → ${fmt(curTarget)}</b>로 줄었습니다.`,'',8000)},tg*(0.38+Math.random()*0.17)*1000));
+  if(level===3){const used=[];const slots=tg>=240?[[0.2,0.33],[0.6,0.75]]:[[0.3,0.5]];
+    slots.forEach(([a,b])=>pTimers.push(setTimeout(()=>{if(running)askQuestion(used)},tg*(a+Math.random()*(b-a))*1000)))}
+}
+function stopPressure(){pTimers.forEach(clearTimeout);pTimers=[];try{speechSynthesis.cancel()}catch(e){}hideBanner()}
+function pressureTick(s){
+  if(level<2||!pEv)return;
+  if(!pEv.warn1&&curTarget-s<=60&&curTarget-s>0&&curTarget>=90){pEv.warn1=true;if(!$('#qDone')||pEv.qs.every(q=>q.endedAt!=null))showBanner('<b>진행 안내</b> 1분 남았습니다.','',5000)}
+  if(level===3&&!pEv.over&&s>=curTarget){pEv.over=true;if(pEv.qs.every(q=>q.endedAt!=null))showBanner('<b>진행 안내</b> 시간이 종료되었습니다. 마무리해 주세요.','',6000)}
+}
 
 $('#hideBtn').onclick=()=>{hidden=!hidden;$('#scriptView').classList.toggle('hidden',hidden);$('#hideBtn').textContent=hidden?'대본 보이기':'대본 가리기'};
 $('#startBtn').onclick=start;
@@ -161,6 +219,10 @@ async function start(){
   $('#liveText').textContent='';$('#paceNum').textContent='-';
   $('#setup').classList.add('hide');$('#result').classList.add('hide');$('#live').classList.remove('hide');
   t0=performance.now();
+  curTarget=(+$('#target').value||5)*60;
+  level=+document.querySelector('input[name=lvl]:checked').value;
+  try{actx.resume()}catch(e){}
+  startPressure();
   timerI=setInterval(tick,200);
   const buf=new Float32Array(an.fftSize);
   lvlI=setInterval(()=>{an.getFloatTimeDomainData(buf);let s=0;for(const v of buf)s+=v*v;const rms=Math.sqrt(s/buf.length);
@@ -189,7 +251,7 @@ function cumAt(t){let v=0;for(const [tt,c] of cum){if(tt<=t)v=c;else break}retur
 function paceAt(a,b){a=Math.max(0,a);if(b-a<3)return null;const d=cumAt(b)-cumAt(a);return d<=0?null:d/(b-a)*60}
 
 function tick(){
-  const s=(performance.now()-t0)/1000,tg=(+$('#target').value||5)*60;
+  const s=(performance.now()-t0)/1000,tg=curTarget;pressureTick(s);
   $('#timer').textContent=fmt(s);$('#prog').style.width=Math.min(100,s/tg*100)+'%';
   $('#prog').style.background=s>tg?'var(--warm)':'var(--accent)';
 }
@@ -198,6 +260,7 @@ function finish(){
   if(!running)return;running=false;
   const dur=(performance.now()-t0)/1000;
   clearInterval(timerI);clearInterval(lvlI);
+  stopPressure();pEv.qs.forEach(q=>{if(q.endedAt==null)q.endedAt=dur});
   try{rec&&rec.stop()}catch(e){}
   stream&&stream.getTracks().forEach(t=>t.stop());actx&&actx.close();
   const m=analyze(dur);
@@ -207,16 +270,18 @@ function finish(){
 
 /* 분석 */
 function analyze(dur){
-  const tg=(+$('#target').value||5)*60;
+  const tg=curTarget;
   // 쉼: 소음 바닥 보정 후 무음 구간
   const lv=levelLog.map(x=>x[1]).slice(0,8).sort((a,b)=>a-b);
   const floor=lv.length?lv[Math.floor(lv.length/2)]:0.005;
   const thr=Math.max(0.012,floor*2.8);
-  const pauses=[];let sil=null;
+  let pauses=[];let sil=null;
   for(const [t,r] of levelLog){
     if(r<thr){if(sil==null)sil=t}
     else if(sil!=null){const d=t-sil;if(d>=PAUSE_MIN&&sil>2)pauses.push({at:sil,len:d});sil=null}
   }
+  // 돌발 질문을 듣는 동안의 침묵은 쉼/막힘으로 세지 않음
+  pauses=pauses.filter(p=>!pEv.qs.some(q=>p.at>=q.at-0.5&&p.at<=(q.ttsEnd||q.at+3)+5));
   const goodPauses=pauses.filter(p=>p.len<PAUSE_LONG).length;
   const longPauses=pauses.filter(p=>p.len>=PAUSE_LONG).length;
   // 속도 시리즈(10초 창)
@@ -239,7 +304,14 @@ function analyze(dur){
     const sp=fullText;const hit=st.filter(w=>sp.includes(w.slice(0,Math.max(2,w.length-1)))).length;
     cover=st.length?hit/st.length:null;
   }
-  return{date:new Date().toISOString(),dur,target:tg,pauses:pauses.length,goodPauses,longPauses,series,hasSR,avg,cv,openP,fillers,fpm,cover,words:toks.length};
+  // 돌발 질문: 답변 시작까지 걸린 시간, 답변 길이, 질문 후 속도 복구
+  const qa=pEv.qs.map(q=>{
+    const end=q.endedAt??dur,tEnd=q.ttsEnd??q.at+3;
+    const fs=(levelLog.find(([t,r])=>t>tEnd+0.2&&r>thr)||[null])[0];
+    const before=paceAt(q.at-20,q.at),after=paceAt(end,Math.min(dur,end+20));
+    return{latency:fs!=null?Math.max(0,fs-tEnd):null,ansLen:fs!=null?Math.max(0,end-fs):null,rec:before&&after?after/before:null};
+  });
+  return{date:new Date().toISOString(),dur,target:pEv.origTarget||tg,eTarget:tg,level,sounds:pEv.sounds,cut:pEv.cut,qa,pauses:pauses.length,goodPauses,longPauses,series,hasSR,avg,cv,openP,fillers,fpm,cover,words:toks.length};
 }
 
 /* 결과: 잘한 점 먼저, 개선은 1개만 */
@@ -247,8 +319,27 @@ function renderResult(m,all){
   const prev=all.length>1?all[all.length-2]:null;
   const good=[];
   good.push('끝까지 해냈어요. 이게 가장 중요한 첫 걸음입니다.');
-  const diff=(m.dur-m.target)/m.target;
-  if(Math.abs(diff)<=0.1)good.push(`시간을 정확히 지켰어요 (목표 ${fmt(m.target)} / 실제 ${fmt(m.dur)}).`);
+  const tgt=m.eTarget||m.target;
+  const diff=(m.dur-tgt)/tgt;
+  if(Math.abs(diff)<=0.1)good.push(`시간을 정확히 지켰어요 (목표 ${fmt(tgt)} / 실제 ${fmt(m.dur)}).`);
+  // 압박 모드 칭찬
+  let pn=null;
+  if(m.level>=2){
+    if(m.sounds>0)good.push(`객석 소음이 ${m.sounds}번 있었는데도 흐름을 이어갔어요. 실전에서도 큰 무기예요.`);
+    if(m.cut){
+      if(m.dur<=m.eTarget*1.1)good.push(`발표 중 시간이 ${fmt(m.cut.from)} → ${fmt(m.cut.to)}로 줄었는데도 맞췄어요.`);
+      else pn=`발표 중 시간이 줄었을 때 <b>"덜어낼 문장"</b>을 미리 정해두면 흔들리지 않아요. 지금 대본에서 빼도 되는 문장 2개에 표시해 두세요.`;
+    }
+    (m.qa||[]).forEach((a,i)=>{
+      if(a.latency!=null&&a.latency<=3)good.push(`돌발 질문${i+1}에 ${a.latency.toFixed(1)}초 만에 답을 시작했어요.`);
+      if(a.rec!=null&&a.rec>=0.85&&a.rec<=1.2)good.push(`질문 뒤에도 원래 속도로 돌아왔어요. 복구력이 좋아요.`);
+    });
+    if(!pn){
+      const slow=(m.qa||[]).find(a=>a.latency!=null&&a.latency>5),long=(m.qa||[]).find(a=>a.ansLen!=null&&a.ansLen>40);
+      if(slow)pn='돌발 질문엔 <b>"좋은 질문입니다"</b> 한마디로 한 박자 벌고 답해 보세요. 생각할 시간이 생깁니다.';
+      else if(long)pn='질문 답변이 길었어요. 다음엔 <b>결론 한 문장 → 근거 1개</b>, 30초 안에 끝내 보세요.';
+    }
+  }
   if(m.avg!=null&&m.avg>=GOOD_LO&&m.avg<=GOOD_HI)good.push(`평균 속도 ${Math.round(m.avg)}자/분, 듣기 편한 속도예요.`);
   if(m.cv!=null&&m.cv<0.22)good.push('속도가 일정했어요. 안정감 있게 들립니다.');
   if(m.hasSR&&m.fpm<3)good.push(`군더더기 말이 적어요 (분당 ${m.fpm.toFixed(1)}회).`);
@@ -260,7 +351,8 @@ function renderResult(m,all){
   }
   // 고칠 것 1개
   let next=null;
-  if(m.openP!=null&&m.avg&&m.openP>m.avg*1.15)next='오프닝이 평소보다 빨랐어요. 긴장하면 누구나 그래요. 다음엔 <b>첫 문장을 말하고 숨 한 번</b> 쉬고 시작해 보세요.';
+  if(pn)next=pn;
+  else if(m.openP!=null&&m.avg&&m.openP>m.avg*1.15)next='오프닝이 평소보다 빨랐어요. 긴장하면 누구나 그래요. 다음엔 <b>첫 문장을 말하고 숨 한 번</b> 쉬고 시작해 보세요.';
   else if(m.avg!=null&&m.avg>GOOD_HI)next='전체적으로 조금 빨라요. 다음엔 <b>문장 끝에서 반 박자만</b> 멈춰 보세요.';
   else if(m.avg!=null&&m.avg<GOOD_LO)next='속도가 느긋해요. 시간이 부족하다면 <b>가장 덜 중요한 문장 하나</b>를 덜어내 보세요.';
   else if(m.longPauses>0)next=`${m.longPauses}번 4초 이상 막힌 구간이 있었어요. 막히면 <b>"정리하면…"</b> 같은 복구 문장으로 이어가는 연습을 해보세요.`;
@@ -270,13 +362,14 @@ function renderResult(m,all){
 
   const el=$('#result');el.classList.remove('hide');
   el.innerHTML=`
-   <h2>2. 오늘의 리허설</h2>
+   <h2>2. 오늘의 리허설${m.level>1?` · 압박 ${m.level}단계`:''}</h2>
    <h3 style="margin:8px 0 4px;font-size:15px">잘한 점</h3>
    ${good.map(g=>`<div class="good">${g}</div>`).join('')}
    <h3 style="margin:14px 0 4px;font-size:15px">다음에 딱 하나만</h3>
    <div class="next">${next}</div>
+   ${levelUpMsg(m,diff)}
    <div class="grid" style="margin:14px 0">
-     <div class="stat"><b>${fmt(m.dur)}</b><span>발표 시간 (목표 ${fmt(m.target)})</span></div>
+     <div class="stat"><b>${fmt(m.dur)}</b><span>발표 시간 (목표 ${fmt(tgt)})</span></div>
      <div class="stat"><b>${m.avg!=null?Math.round(m.avg):'-'}</b><span>평균 속도 (자/분)</span></div>
      <div class="stat"><b>${m.hasSR?m.fillers:'-'}</b><span>군더더기 말(회)</span></div>
      <div class="stat"><b>${m.goodPauses}</b><span>의도적인 쉼(회)</span></div>
@@ -286,6 +379,14 @@ function renderResult(m,all){
   $('#live').classList.add('hide');
   $('#againBtn').onclick=()=>{$('#result').classList.add('hide');$('#setup').classList.remove('hide')};
   $('#toHist').onclick=()=>document.querySelector('[data-t=history]').click();
+}
+
+/* 다음 압박 단계로 올려도 되는지 */
+function levelUpMsg(m,diff){
+  const ready=Math.abs(diff)<=0.15&&(!m.hasSR||m.fpm<4)&&(m.cv==null||m.cv<0.3)&&!(m.qa||[]).some(a=>a.latency!=null&&a.latency>5);
+  const names=['','연습','긴장','실전'];
+  if(m.level>=3)return ready?'<div class="good"><b>실전 단계 통과!</b> 소음, 시간 단축, 돌발 질문까지 버텼어요. 이제 같은 조건으로 두세 번만 더 반복해서 몸에 익히면 됩니다.</div>':'<div class="muted" style="margin:8px 0">실전 단계는 원래 어려워요. 한 번 더 도전하면 훨씬 편해집니다.</div>';
+  return ready?`<div class="good"><b>준비됐어요!</b> 다음엔 ${m.level+1}단계(${names[m.level+1]})에 도전해 볼까요?</div>`:`<div class="muted" style="margin:8px 0">${m.level}단계를 한 번 더 하면 ${m.level+1}단계로 올라갈 준비가 됩니다.</div>`;
 }
 
 /* 차트 */
@@ -338,8 +439,8 @@ function renderHistory(){
      ${trend(sr.filter(m=>m.avg).map(m=>m.avg),'평균 속도 (자/분)',v=>Math.round(v),false)}
      ${trend(all.map(m=>m.goodPauses),'의도적 쉼 (회)',v=>v,false)}
     </div></div>
-   <div class="card"><h2>리허설 목록</h2><table><tr><th>날짜</th><th>시간</th><th>속도</th><th>군더더기</th><th></th></tr>
-    ${[...all].reverse().map(m=>`<tr><td>${new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${fmt(m.dur)}</td><td>${m.avg?Math.round(m.avg):'-'}</td><td>${m.hasSR?m.fillers:'-'}</td><td><button class="del" data-id="${m.id}">삭제</button></td></tr>`).join('')}</table></div>`;
+   <div class="card"><h2>리허설 목록</h2><table><tr><th>날짜</th><th>시간</th><th>속도</th><th>군더더기</th><th>압박</th><th></th></tr>
+    ${[...all].reverse().map(m=>`<tr><td>${new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${fmt(m.dur)}</td><td>${m.avg?Math.round(m.avg):'-'}</td><td>${m.hasSR?m.fillers:'-'}</td><td>${m.level||1}단계</td><td><button class="del" data-id="${m.id}">삭제</button></td></tr>`).join('')}</table></div>`;
   el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{save(load().filter(m=>String(m.id)!==b.dataset.id));renderHistory()});
 }
 })();
