@@ -39,6 +39,7 @@
 <div id="join">
   <h1>🌐 Live Interpreter</h1>
   <div><label>방 코드 / Room code</label><input id="room" value="MEET" autocapitalize="characters"></div>
+  <div id="codeBox" class="hide"><label>참가 코드 / Access code</label><input id="code" type="password" autocomplete="off" placeholder="진행자에게 받은 코드"></div>
   <div><label>이름 / Name</label><input id="name" placeholder="예: 김대표 / John"></div>
   <div><label>내 언어 / My language</label>
     <select id="lang"><option value="ko">한국어 (Korean)</option><option value="en">English</option></select></div>
@@ -101,11 +102,26 @@ function prepareAudio() {
     pre = { ctx, streamP };
   } catch { pre = null; }
 }
+fetch('/config').then(r => r.json()).then(c => { if (c.codeRequired) $('codeBox').classList.remove('hide'); }).catch(() => {});
+try {
+  const q = new URLSearchParams(location.search), qc = q.get('code');
+  if (qc) { $('code').value = qc; $('codeBox').classList.remove('hide'); q.delete('code'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '')); }
+  else { const saved = sessionStorage.getItem('li.code'); if (saved) $('code').value = saved; }
+} catch {}
+let denied = false;
+function toastMsg(t) { $('interim').textContent = t; setTimeout(() => { if ($('interim').textContent === t) $('interim').textContent = ''; }, 4000); }
+function showJoin(msg) {            // 입장이 거부되면 첫 화면으로 돌아가 이유를 보여줌
+  denied = true; try { ws.close(); } catch {}
+  if (micOn) setMic(false);
+  $('app').classList.add('hide'); $('join').classList.remove('hide'); $('warn').textContent = msg;
+}
 $('go').onclick = () => {
-  prepareAudio();
+  prepareAudio(); denied = false; $('warn').textContent = '';
   me = { room:$('room').value.trim() || 'MEET', name:$('name').value.trim() || 'Guest', lang:$('lang').value, mode:$('mode').value };
   mode = me.mode;
-  localStorage.setItem('li', JSON.stringify(me));
+  const { code: _c, ...saveMe } = me;                              // 참가 코드는 이 탭이 닫힐 때까지만 기억 (기기에 남기지 않음)
+  localStorage.setItem('li', JSON.stringify(saveMe));
+  me.code = $('code').value; try { sessionStorage.setItem('li.code', me.code); } catch {}
   $('join').classList.add('hide'); $('app').classList.remove('hide');
   refreshMicUI();
   connect();
@@ -115,7 +131,7 @@ function connect() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => { $('status').style.color = '#22c55e'; ws.send(JSON.stringify({ type:'join', ...me })); };
-  ws.onclose = () => { $('status').style.color = '#ef4444'; setTimeout(connect, 1500); };
+  ws.onclose = () => { $('status').style.color = '#ef4444'; if (!denied) setTimeout(connect, 1500); };
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
     if (m.type === 'joined') {
@@ -129,6 +145,10 @@ function connect() {
     }
     if (m.type === 'interim') $('interim').textContent = m.text ? '… ' + m.text : '';
     if (m.type === 'stt_error') { alert(m.message); setMic(false); }
+    if (m.type === 'denied') showJoin(m.reason === 'locked' ? '참가 코드를 여러 번 틀려 잠시 막혔습니다. 10분 뒤 다시 시도하세요. / Too many wrong codes. Try again in 10 minutes.' : '참가 코드가 맞지 않습니다. 진행자에게 확인하세요. / Wrong access code.');
+    if (m.type === 'room_full') showJoin('이 방은 정원이 찼습니다. 다른 방 코드를 쓰세요. / This room is full.');
+    if (m.type === 'room_limit') showJoin('지금은 새 방을 만들 수 없습니다. 이미 있는 방 코드를 쓰세요. / Too many rooms.');
+    if (m.type === 'rate_limited') toastMsg('말이 너무 빠르게 이어져 일부를 건너뛰었습니다. 잠시 후 다시 말씀해 주세요. / Too many sentences too fast.');
     if (m.type === 'roster') $('roster').textContent = m.roster.map(r => (r.mode === 'ptt' ? '🔘' : '🎙') + r.name + ' (' + r.lang.toUpperCase() + ')').join(', ');
     if (m.type === 'draft') showDraft(m);
     if (m.type === 'draft_clear') document.querySelector(`[data-draft="${CSS.escape(m.id)}"]`)?.remove();

@@ -1,3 +1,4 @@
 
 # artifact built with the client glossary (contains client names)
 artifact/*.private.html
+dist/

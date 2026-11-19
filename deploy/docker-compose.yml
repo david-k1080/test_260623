@@ -1,0 +1,54 @@
+# 통역 서버 + HTTPS 자동 발급(Caddy). 사용법은 README.md 참고.
+services:
+  app:
+    build:
+      context: ../interpreter
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      TRUST_PROXY: "1"                          # 앞단 Caddy가 알려주는 실제 접속자 IP 사용 (app은 밖으로 열려 있지 않음)
+      REQUIRE_ACCESS_CODE: "1"                  # 참가 코드가 없으면 서버가 시작하지 않음
+      ALLOWED_ORIGINS: "https://${DOMAIN}"      # 이 주소에서 연 화면만 접속 허용
+      MINUTES_DIR: /app/minutes
+      GLOSSARY_FILE: /app/config/glossary.local.json
+    volumes:
+      - ./data/minutes:/app/minutes             # 회의록 (서버 디스크에만 저장)
+      - ./data/config:/app/config:ro            # 용어집 (glossary.local.json)
+    expose:
+      - "3000"                                  # 밖으로 직접 공개하지 않음: Caddy만 접근
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data                        # 인증서 저장
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  caddy_data:
+  caddy_config:

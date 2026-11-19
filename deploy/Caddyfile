@@ -1,0 +1,11 @@
+# HTTPS 인증서는 Let's Encrypt에서 자동으로 받고 갱신합니다. (도메인이 이 서버 IP를 가리켜야 함)
+# 접속 기록(access log)은 켜지 않습니다: 참가 코드가 주소 뒤에 붙어도 서버에 남지 않게 하기 위함.
+{$DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# 웹소켓(실시간 통신)은 자동으로 전달됩니다. 접속자 IP는 Caddy가 X-Forwarded-For 로 덮어써서 위조할 수 없습니다.
+	reverse_proxy app:3000
+}

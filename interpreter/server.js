@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import WebSocket, { WebSocketServer } from 'ws';
 import Anthropic from '@anthropic-ai/sdk';
@@ -39,9 +40,11 @@ let GLOSSARY = '';
 let KEYTERMS = { ko: [], en: [] };
 try {
   // glossary.local.json(실제 회사/고객 용어, git 제외)이 있으면 우선 사용
-  const gfile = fs.existsSync(path.join(__dirname, 'glossary.local.json')) ? 'glossary.local.json' : 'glossary.json';
-  const g = JSON.parse(fs.readFileSync(path.join(__dirname, gfile), 'utf8'));
-  console.log('용어집 파일:', gfile);
+  // GLOSSARY_FILE 로 위치를 지정할 수 있음 (서버/도커에서 용어집을 이미지 밖에 두기 위함)
+  const gpath = (process.env.GLOSSARY_FILE && fs.existsSync(process.env.GLOSSARY_FILE)) ? process.env.GLOSSARY_FILE :
+    (fs.existsSync(path.join(__dirname, 'glossary.local.json')) ? path.join(__dirname, 'glossary.local.json') : path.join(__dirname, 'glossary.json'));
+  const g = JSON.parse(fs.readFileSync(gpath, 'utf8'));
+  console.log('용어집 파일:', path.basename(gpath));
   if (g.context) GLOSSARY += `\n\nMeeting context: ${g.context}`;
   const lines = (g.terms || []).map(t => `- ${t.ko} <-> ${t.en}`);
   if (lines.length) GLOSSARY += `\n\nGlossary (always use these exact renderings):\n${lines.join('\n')}`;
@@ -55,17 +58,56 @@ try {
   console.log(`용어집 ${(g.terms || []).length}개 로드, keyterm en=${KEYTERMS.en.length} ko=${KEYTERMS.ko.length}`);
 } catch (e) { console.warn('용어집 없음:', e.message); }
 
+// ---------------- 운영·보안 설정 (공개 서버용) ----------------
+// 모두 환경 변수로 조정합니다. 값을 정하지 않으면 안전한 기본값을 씁니다.
+const num = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v >= 0 ? v : d; };
+const ACCESS_CODE = process.env.ACCESS_CODE || '';                      // 참가 코드: 설정하면 코드를 아는 사람만 입장
+const TRUST_PROXY = process.env.TRUST_PROXY === '1';                     // 앞단(Caddy/nginx)이 알려주는 실제 접속자 IP를 신뢰
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
+const MAX_CONN_PER_IP = num('MAX_CONN_PER_IP', 20);                      // 한 IP의 동시 접속 수
+const MAX_ROOMS = num('MAX_ROOMS', 20);
+const MAX_ROOM_CLIENTS = num('MAX_ROOM_CLIENTS', 12);
+const MAX_STT_SESSIONS = num('MAX_STT_SESSIONS', 8);                     // 동시에 열리는 Deepgram 음성 인식 수 (요금 보호)
+const UTTER_PER_MIN = num('UTTER_PER_MIN', 40);                          // 한 접속자가 1분에 만들 수 있는 문장 수 (번역 요금 보호)
+const MAX_BAD_CODES = num('MAX_BAD_CODES', 5);                           // 참가 코드를 틀릴 수 있는 횟수
+const BAD_CODE_WINDOW_MS = num('BAD_CODE_WINDOW_MIN', 10) * 60 * 1000;
+const MINUTES_RETENTION_DAYS = num('MINUTES_RETENTION_DAYS', 0);         // 0 = 삭제하지 않음
+if (process.env.REQUIRE_ACCESS_CODE === '1' && !ACCESS_CODE) { console.error('✖ REQUIRE_ACCESS_CODE=1 인데 ACCESS_CODE 가 비어 있습니다. 공개 서버는 참가 코드 없이 시작하지 않습니다.'); process.exit(1); }
+if (!ACCESS_CODE) console.warn('⚠ ACCESS_CODE 없음: 주소를 아는 누구나 입장해 API 요금을 쓸 수 있습니다. 공개 서버에서는 반드시 설정하세요.');
+const clientIp = req => (TRUST_PROXY && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || 'unknown';
+const sameSecret = (a, b) => { const x = crypto.createHash('sha256').update(String(a)).digest(), y = crypto.createHash('sha256').update(String(b)).digest(); return crypto.timingSafeEqual(x, y); };
+const badCodes = new Map();                                              // ip -> { n, first }
+const lockedOut = ip => { const r = badCodes.get(ip); if (!r) return false; if (Date.now() - r.first > BAD_CODE_WINDOW_MS) { badCodes.delete(ip); return false; } return r.n >= MAX_BAD_CODES; };
+const noteBadCode = ip => { const r = badCodes.get(ip); if (!r || Date.now() - r.first > BAD_CODE_WINDOW_MS) badCodes.set(ip, { n: 1, first: Date.now() }); else r.n++; };
+const connPerIp = new Map();
+const SEC_HEADERS = {
+  'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY', 'Cache-Control': 'no-store',
+  'Permissions-Policy': 'microphone=(self), camera=(), geolocation=()',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'",
+};
+
 const LANG_NAME = { ko: 'Korean', en: 'English' };
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
 
+const startedAt = Date.now();
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
-  const file = path.join(__dirname, 'public', url === '/' ? 'index.html' : url);
-  if (!file.startsWith(path.join(__dirname, 'public'))) { res.writeHead(403); return res.end(); }
+  if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, SEC_HEADERS); return res.end(); }
+  if (url === '/healthz') {                                          // 서버 점검용: 비밀 정보 없음
+    res.writeHead(200, { ...SEC_HEADERS, 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ ok: true, uptime: Math.round((Date.now() - startedAt) / 1000), rooms: rooms.size, clients: wss.clients.size }));
+  }
+  if (url === '/config') {                                           // 화면이 참가 코드 입력칸을 보일지 결정
+    res.writeHead(200, { ...SEC_HEADERS, 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ codeRequired: !!ACCESS_CODE }));
+  }
+  let file;
+  try { file = path.join(__dirname, 'public', url === '/' ? 'index.html' : decodeURIComponent(url)); } catch { res.writeHead(400, SEC_HEADERS); return res.end(); }
+  if (!file.startsWith(path.join(__dirname, 'public') + path.sep)) { res.writeHead(403, SEC_HEADERS); return res.end(); }
   fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404); return res.end('Not found'); }
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
-    res.end(data);
+    if (err) { res.writeHead(404, SEC_HEADERS); return res.end('Not found'); }
+    res.writeHead(200, { ...SEC_HEADERS, 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
+    res.end(req.method === 'HEAD' ? undefined : data);
   });
 });
 
@@ -112,6 +154,21 @@ function saveMinutes(room) {
     fs.writeFileSync(path.join(MINUTES_DIR, minutesFilename(room)), renderMinutes(room), 'utf8');
   } catch (e) { console.error('[회의록] 저장 실패', e.message); }
 }
+
+// 오래된 회의록 자동 삭제 (MINUTES_RETENTION_DAYS 일 지난 파일). 기본값 0 = 삭제하지 않음.
+function cleanMinutes() {
+  if (!MINUTES_RETENTION_DAYS) return;
+  try {
+    const limit = Date.now() - MINUTES_RETENTION_DAYS * 86400000; let n = 0;
+    for (const f of fs.readdirSync(MINUTES_DIR)) {
+      if (!f.endsWith('.md')) continue;
+      const fp = path.join(MINUTES_DIR, f);
+      if (fs.statSync(fp).mtimeMs < limit) { fs.unlinkSync(fp); n++; }
+    }
+    if (n) console.log(`[회의록] ${MINUTES_RETENTION_DAYS}일 지난 파일 ${n}개 삭제`);
+  } catch (e) { if (e.code !== 'ENOENT') console.error('[회의록] 정리 실패', e.message); }
+}
+cleanMinutes(); setInterval(cleanMinutes, 6 * 3600 * 1000).unref();
 
 // rooms: code -> { clients:Set<ws>, history:[{name,text}] }
 const rooms = new Map();
@@ -360,9 +417,17 @@ function closeStt(ws) {
 }
 
 // ---------------- 발화 처리(번역 + 배포) ----------------
+function takeToken(ws) {                                           // 접속자별 문장 수 제한 (번역 호출 요금 보호)
+  if (!UTTER_PER_MIN) return true;
+  const now = Date.now(), b = ws.bucket || (ws.bucket = { tokens: UTTER_PER_MIN, t: now });
+  b.tokens = Math.min(UTTER_PER_MIN, b.tokens + (now - b.t) / 60000 * UTTER_PER_MIN); b.t = now;
+  if (b.tokens < 1) return false;
+  b.tokens -= 1; return true;
+}
 async function handleUtterance(ws, rawText, id, draftId) {
   const text = String(rawText || '').trim().slice(0, 1000);
   if (!text || !ws.meta) return;
+  if (!takeToken(ws)) { send(ws, { type: 'rate_limited' }); return; }
   const { code, lang, name } = ws.meta;
   const room = rooms.get(code); if (!room) return;
   const other = lang === 'ko' ? 'en' : 'ko';
@@ -385,16 +450,45 @@ async function handleUtterance(ws, rawText, id, draftId) {
   saveMinutes(room);
 }
 
-const wss = new WebSocketServer({ server });
-wss.on('connection', ws => {
-  ws.id = ++connSeq; ws.levels = [];
+const wss = new WebSocketServer({
+  server,
+  maxPayload: 64 * 1024,                                             // 음성 조각은 3.2KB, JSON은 수 KB: 그 이상은 거부
+  verifyClient: ({ req, origin }, cb) => {
+    if (ALLOWED_ORIGINS.length && !ALLOWED_ORIGINS.includes(origin)) return cb(false, 403, 'Origin not allowed');
+    const ip = clientIp(req);
+    if (MAX_CONN_PER_IP && (connPerIp.get(ip) || 0) >= MAX_CONN_PER_IP) return cb(false, 429, 'Too many connections');
+    cb(true);
+  },
+});
+// 끊긴 폰이 음성 인식 세션(=요금)을 붙잡고 있지 않도록 30초마다 생존 확인
+const heartbeat = setInterval(() => { for (const c of wss.clients) { if (c.isAlive === false) { c.terminate(); continue; } c.isAlive = false; try { c.ping(); } catch {} } }, 30000);
+heartbeat.unref();
+
+wss.on('connection', (ws, req) => {
+  ws.id = ++connSeq; ws.levels = []; ws.isAlive = true; ws.ip = clientIp(req);
+  connPerIp.set(ws.ip, (connPerIp.get(ws.ip) || 0) + 1);
+  ws.on('pong', () => { ws.isAlive = true; });
+  ws.on('error', () => {});                                       // 규격 위반·너무 큰 메시지 등: 이 접속만 끊고 서버는 계속 동작 (처리하지 않으면 서버 전체가 종료됨)
+  ws.joinTimer = setTimeout(() => { if (!ws.meta) ws.close(4002, 'join timeout'); }, 15000);   // 입장 요청 없이 열어 두는 접속 정리
   ws.on('message', (raw, isBinary) => {
     // 마이크 오디오 (PCM16 16kHz) → Deepgram
     if (isBinary) { const st = ws.stt; if (!st) return; if (st.dg.readyState === 1) st.dg.send(raw); else if (st.pending.length < 100) st.pending.push(raw); return; }
     let m; try { m = JSON.parse(raw); } catch { return; }
 
     if (m.type === 'join') {
+      if (ws.meta) return;                                           // 한 접속은 한 번만 입장
+      if (ACCESS_CODE) {
+        if (lockedOut(ws.ip)) { send(ws, { type: 'denied', reason: 'locked' }); setTimeout(() => ws.close(4001, 'denied'), 200); return; }
+        if (!sameSecret(m.code || '', ACCESS_CODE)) { noteBadCode(ws.ip); send(ws, { type: 'denied', reason: 'bad_code' }); setTimeout(() => ws.close(4001, 'denied'), 200); return; }
+      }
       const code = String(m.room || '').toUpperCase().slice(0, 12) || 'MEET';
+      if (!rooms.has(code) && MAX_ROOMS && rooms.size >= MAX_ROOMS) {
+        // 재접속 대기 중인 빈 방은 자리를 비켜줌 (회의록은 이미 디스크에 저장돼 있음). 진행 중인 방만 상한에 계산.
+        for (const [k, r] of rooms) { if (rooms.size < MAX_ROOMS) break; if (r.clients.size === 0) { clearTimeout(r.expire); saveMinutes(r); rooms.delete(k); } }
+        if (rooms.size >= MAX_ROOMS) { send(ws, { type: 'room_limit' }); setTimeout(() => ws.close(4003, 'room limit'), 200); return; }
+      }
+      if (MAX_ROOM_CLIENTS && (rooms.get(code)?.clients.size || 0) >= MAX_ROOM_CLIENTS) { send(ws, { type: 'room_full' }); setTimeout(() => ws.close(4003, 'room full'), 200); return; }
+      clearTimeout(ws.joinTimer);
       const lang = m.lang === 'en' ? 'en' : 'ko';
       const name = String(m.name || 'Guest').slice(0, 30);
       const mode = m.mode === 'ptt' ? 'ptt' : 'free';
@@ -407,7 +501,12 @@ wss.on('connection', ws => {
       send(ws, { type: 'joined', room: code, stt: (DG_KEY || process.env.DEEPGRAM_URL) ? 'deepgram' : 'browser' });
       broadcastRoster(room);
     }
-    if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) { closeStt(ws); openDeepgram(ws, 0); }
+    if (m.type === 'mic_start' && ws.meta && (DG_KEY || process.env.DEEPGRAM_URL)) {
+      closeStt(ws);
+      const open = [...wss.clients].filter(c => c !== ws && c.stt).length;
+      if (MAX_STT_SESSIONS && open >= MAX_STT_SESSIONS) { send(ws, { type: 'stt_error', message: '동시에 쓸 수 있는 음성 인식 수를 넘었습니다. 잠시 후 다시 시도하세요.' }); return; }
+      openDeepgram(ws, 0);
+    }
     if (m.type === 'mic_stop') { closeStt(ws); ws.levels = []; }
     if (m.type === 'set_mode' && ws.meta) {                      // 프리토킹 ↔ 버튼 방식 전환
       ws.meta.mode = m.mode === 'ptt' ? 'ptt' : 'free';
@@ -423,8 +522,8 @@ wss.on('connection', ws => {
     if (m.type === 'summarize' && ws.meta) {
       const room = rooms.get(ws.meta.code);
       if (!room || !room.log.length) return send(ws, { type: 'summary', error: 'empty' });
-      if (room.summarizing) return send(ws, { type: 'summary', error: 'busy' });
-      room.summarizing = true;
+      if (room.summarizing || Date.now() - (room.lastSummaryAt || 0) < 30000) return send(ws, { type: 'summary', error: 'busy' });   // 요약은 비용이 커서 30초에 한 번
+      room.summarizing = true; room.lastSummaryAt = Date.now();
       summarizeRoom(room).then(text => {
         const filename = minutesFilename(room).replace(/\.md$/, '_summary.md');
         if (SAVE_MINUTES) try { fs.mkdirSync(MINUTES_DIR, { recursive: true }); fs.writeFileSync(path.join(MINUTES_DIR, filename), text, 'utf8'); } catch (e) { console.error('[요약] 저장 실패', e.message); }
@@ -441,6 +540,8 @@ wss.on('connection', ws => {
   });
 
   ws.on('close', () => {
+    clearTimeout(ws.joinTimer);
+    const n = (connPerIp.get(ws.ip) || 1) - 1; if (n <= 0) connPerIp.delete(ws.ip); else connPerIp.set(ws.ip, n);
     closeStt(ws);
     if (!ws.meta) return;
     const room = rooms.get(ws.meta.code);
@@ -451,4 +552,19 @@ wss.on('connection', ws => {
   });
 });
 
-server.listen(PORT, () => console.log(`Interpreter running: http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Interpreter running: http://localhost:${PORT}${ACCESS_CODE ? ' (참가 코드 필요)' : ''}`));
+
+process.on('unhandledRejection', e => console.error('[오류] 처리되지 않은 비동기 오류:', e && e.message ? e.message : e));
+
+// 종료 신호(배포·재시작)를 받으면 회의록을 저장하고 접속을 정리한 뒤 끝냅니다.
+let stopping = false;
+function shutdown(sig) {
+  if (stopping) return; stopping = true;
+  console.log(`[종료] ${sig} 수신: 회의록 저장 후 종료합니다`);
+  for (const room of rooms.values()) saveMinutes(room);
+  for (const c of wss.clients) { try { c.close(1001, 'server restarting'); } catch {} }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 4000).unref();
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

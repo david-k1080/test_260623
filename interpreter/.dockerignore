@@ -1,0 +1,9 @@
+node_modules
+.env
+*.env
+glossary.local.json
+minutes
+rehearsal.local.md
+README.md
+.git
+*.log

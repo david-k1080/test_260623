@@ -68,3 +68,23 @@ cloudflared 설치: macOS `brew install cloudflared` / Windows `winget install C
 | 옆 사람 목소리 | 가장 크게 들은 폰만 통역 (화자 중재) | 누른 사람이 항상 우선, 다른 폰이 받은 같은 문장은 자동 제거 |
 - 서로 다른 방식을 섞어 써도 됩니다 (예: 데이빗 님은 자동, 손님은 버튼). 참석자 목록에 🎙/🔘로 표시됩니다.
 - 두 방식 모두 말하는 도중에 번역 초안이 먼저 뜨고, 확정되면 그 자리에서 바뀝니다.
+
+## 공개 서버로 운영하기 (클라우드 VM)
+노트북과 터널 대신 클라우드 VM에 고정 주소로 올리는 방법은 `../deploy/README.md` 에 있습니다 (Docker, 자동 HTTPS, 참가 코드).
+
+공개 서버를 위한 보호 기능은 모두 환경 변수로 조정합니다 (기본값 있음):
+| 변수 | 기본값 | 설명 |
+|---|---|---|
+| `ACCESS_CODE` | (없음) | 설정하면 이 코드를 아는 사람만 입장. 공개 서버에서는 필수 |
+| `REQUIRE_ACCESS_CODE=1` | 꺼짐 | 켜면 `ACCESS_CODE` 가 없을 때 서버가 시작하지 않음 |
+| `ALLOWED_ORIGINS` | (모두) | 쉼표로 구분한 허용 주소. 예: `https://meet.example.com` |
+| `TRUST_PROXY=1` | 꺼짐 | 앞단 프록시(Caddy/nginx)가 알려주는 접속자 IP 사용. 프록시 뒤에서만 켜세요 |
+| `MAX_ROOMS` / `MAX_ROOM_CLIENTS` | 20 / 12 | 동시 방 수 / 방 하나의 인원 |
+| `MAX_CONN_PER_IP` | 20 | 한 IP의 동시 접속 |
+| `MAX_STT_SESSIONS` | 8 | 동시 음성 인식 수 (Deepgram 요금 보호) |
+| `UTTER_PER_MIN` | 40 | 한 사람이 1분에 만들 수 있는 문장 수 (번역 요금 보호) |
+| `MAX_BAD_CODES`, `BAD_CODE_WINDOW_MIN` | 5, 10 | 참가 코드를 틀릴 수 있는 횟수와 잠금 시간(분) |
+| `MINUTES_RETENTION_DAYS` | 0 | 회의록 자동 삭제 기간(일). 0 = 삭제 안 함 |
+| `GLOSSARY_FILE` | (자동) | 용어집 파일 경로 (서버에서 이미지 밖에 둘 때) |
+
+서버 상태 확인용 주소: `/healthz` (비밀 정보 없음). 시작할 때 `ACCESS_CODE`가 없으면 경고가 출력됩니다.
