@@ -8,6 +8,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      HOST: "0.0.0.0"                           # 컨테이너 안에서는 모든 인터페이스 (밖에는 Caddy만 공개)
+      DEFAULT_PAGE: "index.html"                # 여러 기기용 화면
       TRUST_PROXY: "1"                          # 앞단 Caddy가 알려주는 실제 접속자 IP 사용 (app은 밖으로 열려 있지 않음)
       REQUIRE_ACCESS_CODE: "1"                  # 참가 코드가 없으면 서버가 시작하지 않음
       ALLOWED_ORIGINS: "https://${DOMAIN}"      # 이 주소에서 연 화면만 접속 허용

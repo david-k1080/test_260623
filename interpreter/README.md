@@ -1,5 +1,22 @@
 # Live Interpreter (한↔영 실시간 통역)
 
+## ★ 내 노트북에서 혼자 쓰기 (가장 간단)
+서버에 올리지 않고, **내 노트북에서만** 돌려 혼자 화면을 보며 미팅합니다. 같은 와이파이의 다른 기기나 외부에서는 접속할 수 없게 막혀 있습니다.
+
+1. Node.js 설치 (처음 한 번, LTS): https://nodejs.org
+2. `interpreter.env.example` 을 복사해 이름을 **`interpreter.env`** 로 바꾸고 키를 입력 (`GEMINI_API_KEY`, 권장: `DEEPGRAM_API_KEY`)
+3. **Windows:** `start-windows.bat` 더블클릭 / **Mac:** `start-mac.command` 더블클릭
+   (처음엔 설치로 1~2분 걸립니다. 브라우저에 http://localhost:3000 이 자동으로 열립니다. **Chrome 권장**)
+4. 화면 오른쪽 위 **[미팅 시작]** 을 누르고 마이크를 허용 → 끝나면 **[미팅 종료]**
+
+화면: 왼쪽 = 한국어로 말한 것 → **영어(큼)**, 오른쪽 = 영어로 말한 것 → **한국어(큼)**. 세로 화면이면 위/아래로 나뉩니다. ⚙ 에서 글자 크기·배치·인식 언어·회의록·요약.
+- 키가 있으면(Deepgram) **한국어·영어를 자동으로 구분**합니다. 없으면 Chrome 내장 인식으로 한 번에 한 언어만 듣습니다 (⚙ 에서 한국어/English 전환).
+- 회의록은 `minutes/` 폴더에 자동 저장됩니다. 키·용어집·회의록은 git 에 올라가지 않습니다.
+- 노트북 스피커로 상대 목소리가 나오면 그 소리도 마이크로 들어갑니다. **노트북을 상대 쪽 말소리가 잘 들어오는 위치**에 두고, 이어폰은 쓰지 않는 편이 인식에 좋습니다.
+- 종료: 검은 창을 닫거나 Ctrl+C. 포트가 사용 중이면 `PORT=3001` 을 interpreter.env 에 추가.
+
+<details><summary>예전 방식: 여러 기기(폰)로 접속 + 터널</summary>
+
 ## 로컬 실행 + 터널 (노트북에서)
 ```bash
 cd interpreter
@@ -16,6 +33,9 @@ cloudflared tunnel --url http://localhost:3000
 `?room=MEET` 를 주소 뒤에 붙이면 방 코드가 자동 입력됩니다.
 
 cloudflared 설치: macOS `brew install cloudflared` / Windows `winget install Cloudflare.cloudflared`
+
+(이 방식은 `DEFAULT_PAGE=index.html HOST=0.0.0.0 ALLOWED_ORIGINS=https://… npm start` 로 실행합니다.)
+</details>
 
 ## 음성 인식
 - `DEEPGRAM_API_KEY` 가 있으면 Deepgram(nova-3)으로 실시간 인식합니다. `glossary.local.json`의 용어를 keyterm으로 보내 인식률을 높입니다.
