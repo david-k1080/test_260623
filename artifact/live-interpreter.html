@@ -147,7 +147,7 @@
     <div class="field"><span class="lab">글자 크기</span><div class="row-btns"><button class="btn" type="button" id="fsMinus">A−</button><button class="btn" type="button" id="fsPlus">A+</button></div></div>
     <div class="field" id="voiceField" hidden><span class="lab">음성</span><div class="row-btns"><button class="btn" type="button" id="bVoice" aria-pressed="false">번역 읽어주기: 끔</button></div>
       <span class="hint">마이크로 듣는 동안에는 읽을 수 없어서, 미팅을 종료하면 읽어줍니다. 이어폰을 권합니다.</span></div>
-    <div class="field"><span class="lab">도구</span><div class="row-btns"><button class="btn" type="button" id="bGloss">용어집</button><button class="btn" type="button" id="bSum">요약</button><button class="btn" type="button" id="bSave">회의록 저장</button><button class="btn" type="button" id="bClear">대화 기록 지우기</button></div></div>
+    <div class="field"><span class="lab">도구</span><div class="row-btns"><button class="btn" type="button" id="bGloss">용어집</button><button class="btn" type="button" id="bSum">요약</button><button class="btn" type="button" id="bSave">회의록 저장</button><button class="btn" type="button" id="bClear">대화 기록 지우기</button><button class="btn" type="button" id="bDiag">진단</button></div><pre id="diag" hidden style="margin:8px 0 0;font-size:12px;white-space:pre-wrap;min-height:0;padding:10px"></pre></div>
   </div>
 </div>
 
@@ -286,9 +286,9 @@ async function analyze(raw, rec, onPeek) {
   if (!j || typeof j.translation !== 'string' || typeof j.text !== 'string') throw { code: 'invalid_json' };
   return { lang: j.lang === 'en' ? 'en' : 'ko', foreign: !!j.foreign, text: j.text.trim(), tr: j.translation.trim() };
 }
-let draftPauseUntil = 0;
+let draftPauseUntil = 0, lastSmpErr = null;
 function sampleError(e, quiet) {
-  const c = e && e.code;
+  const c = e && e.code; lastSmpErr = e && (e.code || e.message) ? { code: e.code, message: e.message } : { message: String(e) };
   if (c === 'not_granted' || c === 'sampling_disabled' || c === 'not_declared' || c === 'capability_disabled') { smpOK = false; showNotices(); repaintAll(); }
   else if (c === 'rate_limited') { draftPauseUntil = Date.now() + 30000; if (!quiet) toast('번역 요청이 많거나 사용 한도에 도달했습니다. 잠시 후 다시 시도하세요.'); }
   else if (!quiet && c !== 'cancelled') toast('번역에 실패했습니다. 다시 말씀해 주세요.');
@@ -642,6 +642,7 @@ function init() {
     };
     fr.readAsText(f); e.target.value = '';
   });
+  $('bDiag').addEventListener('click', diagnose);
   $('bSum').addEventListener('click', summarize);
   $('sumStop').addEventListener('click', () => { if (sumCtl) sumCtl.abort(); });
   $('sumClose').addEventListener('click', () => { if (sumCtl) sumCtl.abort(); close('ovSum'); });
@@ -680,6 +681,27 @@ function webSpeechShim() {
     active: () => on || want,
     onPartial: f => { L.partial.push(f); return () => {}; }, onFinal: f => { L.final.push(f); return () => {}; }, onState: f => { L.state.push(f); return () => {}; },
   };
+}
+
+// Shows which platform features this page was actually given on this device, and why a call failed. For troubleshooting.
+async function diagnose() {
+  const box = $('diag'); box.hidden = false; box.textContent = '확인 중…';
+  const L = [];
+  const yn = (v, extra = '') => (v ? '사용 가능' : '없음') + extra;
+  L.push('음성 입력(플랫폼): ' + yn(dict && !dict.shim));
+  L.push('음성 입력(브라우저 내장): ' + yn(dict && dict.shim, window.SpeechRecognition || window.webkitSpeechRecognition ? '' : ' (이 브라우저에 없음)'));
+  L.push('번역(sample): ' + yn(smp) + (smp && !smpOK ? ' — 이 세션에서 거부됨' : ''));
+  L.push('읽어주기(tts): ' + yn(tts));
+  L.push('파일 저장(downloads): ' + yn(dls));
+  try { const pm = window.claude && window.claude.use ? await window.claude.use('permissions') : null; if (pm && pm.state) L.push('권한 상태: ' + JSON.stringify(await pm.state())); else L.push('권한 상태: 확인 불가'); } catch (e) { L.push('권한 상태 오류: ' + (e && (e.code || e.message))); }
+  if (smp) {
+    try { const r = await smp('Reply with the single word OK.', { modelTier: 'quick', cache: false }); L.push('번역 시험 호출: 성공 → ' + String(r.text).slice(0, 40)); smpOK = true; showNotices(); }
+    catch (e) { L.push('번역 시험 호출: 실패 → code=' + (e && e.code) + ' ' + String((e && e.message) || '').slice(0, 120)); }
+  } else L.push('번역 시험 호출: 건너뜀 (sample 기능이 이 화면에 주어지지 않음)');
+  if (lastSmpErr) L.push('직전 번역 오류: ' + JSON.stringify(lastSmpErr).slice(0, 160));
+  L.push('주소: ' + location.hostname + ' · 창 안: ' + (window.top !== window ? '예' : '아니오'));
+  L.push('브라우저: ' + navigator.userAgent.slice(0, 110));
+  box.textContent = L.join('\n');
 }
 
 async function initCaps() {
