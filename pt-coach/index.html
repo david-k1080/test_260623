@@ -56,6 +56,16 @@ table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;
 .banner{border-radius:12px;padding:12px 14px;margin:10px 0;font-size:15px;background:var(--warm-soft);border-left:4px solid var(--warm)}
 .banner.q{background:var(--accent-soft);border-left-color:var(--accent);font-size:17px}
 .banner button{margin-top:8px}
+.sed{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sed img{width:150px;border-radius:6px;border:1px solid var(--line);display:block}
+.sed input[type=text]{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px;font:inherit;margin-bottom:6px}
+.sed textarea{min-height:56px}
+.cue{background:var(--bg);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:18px;line-height:1.6}
+.cue .k{color:var(--accent);font-size:12px;display:block}
+.cue.hint{background:var(--warm-soft);border-left:4px solid var(--warm)}
+.slideimg{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+.sblank{height:240px;border-radius:10px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--sub);text-align:center;padding:12px}
+@media(max-width:560px){.sed{grid-template-columns:1fr}.sed img{width:100%}}
 </style>
 </head>
 <body>
@@ -65,6 +75,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;
 
   <div class="tabs">
     <button class="tab on" data-t="practice">연습</button>
+    <button class="tab" data-t="slides">슬라이드 연습</button>
     <button class="tab" data-t="history">내 성장 기록</button>
   </div>
 
@@ -113,6 +124,57 @@ table{width:100%;border-collapse:collapse;font-size:14px} td,th{padding:8px 6px;
     <div class="card hide" id="result"></div>
   </div>
 
+  <!-- 슬라이드 연습 -->
+  <div id="slides" class="hide">
+    <div class="card" id="sSetup">
+      <h2>슬라이드 보고 말하기</h2>
+      <div class="muted">PPT를 <b>PDF로 내보내</b> 올리거나, 장표 이미지(PNG/JPG)를 올려 주세요. 파일은 내 브라우저 안에서만 처리돼요.</div>
+      <input type="file" id="sFile" accept=".pdf,application/pdf,image/*" multiple style="margin:12px 0">
+      <div class="muted" id="sStatus"></div>
+      <div id="sEditor"></div>
+      <div id="sOpts" class="hide">
+        <h2 style="margin-top:16px">연습 설정</h2>
+        <label>지지대 단계 (한 번에 한 단계씩 내려가요)</label>
+        <div class="lvlsel">
+          <label><input type="radio" name="sl" value="1">1 · 대본 보며<small>장표 + 대본(첫 문장·키워드·연결)</small></label>
+          <label><input type="radio" name="sl" value="2" checked>2 · 첫 문장+키워드<small>장표 + 첫 문장 + 키워드</small></label>
+          <label><input type="radio" name="sl" value="3">3 · 키워드만<small>장표 + 키워드</small></label>
+          <label><input type="radio" name="sl" value="4">4 · 장표만<small>술술 풀어가기의 핵심 단계</small></label>
+          <label><input type="radio" name="sl" value="5">5 · 장표 가림<small>순서와 기억만으로 (막히면 장표 공개)</small></label>
+        </div>
+        <div class="row" style="margin:8px 0">
+          <div><label>연습 방식</label>
+            <select id="sMode" style="padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+              <option value="seq">순서대로 (발표 흐름 연습)</option>
+              <option value="cold">콜드 스타트 (랜덤 장표, 3초 안에 시작)</option>
+            </select></div>
+          <div style="width:110px"><label>콜드 라운드 수</label><input type="number" id="sRounds" min="1" max="30" value="5"></div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--ink);margin:10px 0"><input type="checkbox" id="sHints" checked> 말이 5초 멈추면 힌트 보여주기 (9초면 더 자세히)</label>
+        <button class="btn" id="sStart">연습 시작</button>
+      </div>
+    </div>
+
+    <div class="card hide" id="sRun">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b id="sNo"></b><span class="muted" id="sTime"></span>
+      </div>
+      <div id="sImgWrap" style="margin-top:8px"><img id="sImg" class="slideimg" alt=""></div>
+      <div id="sHide" class="sblank hide">장표가 가려져 있어요.<br>기억과 순서만으로 말해 보세요.</div>
+      <div id="sCue"></div>
+      <div class="muted" id="sLat" style="margin:6px 0"></div>
+      <div class="bar"><i id="sLvl"></i></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" id="sPrev">이전</button>
+        <button class="btn" id="sNext">다음 장표 (Space)</button>
+        <button class="btn stop" id="sEnd">끝내기</button>
+      </div>
+      <div class="muted" style="margin-top:10px">막히면 숨 한 번, 그리고 복구 문장: <b>"정리하면…"</b> · <b>"이 장표의 핵심은 하나입니다"</b> · <b>"다시 말씀드리면…"</b></div>
+    </div>
+
+    <div class="card hide" id="sResult"></div>
+  </div>
+
   <!-- 기록 -->
   <div id="history" class="hide"></div>
 </div>
@@ -133,6 +195,7 @@ try{ $('#script').value=localStorage.getItem(SKEY)||''; }catch(e){}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
   $('#practice').classList.toggle('hide',b.dataset.t!=='practice');
+  $('#slides').classList.toggle('hide',b.dataset.t!=='slides');
   $('#history').classList.toggle('hide',b.dataset.t!=='history');
   if(b.dataset.t==='history')renderHistory();
 });
@@ -413,7 +476,7 @@ function trend(vals,label,fmtv,lowerBetter){
 /* 기록 / 대시보드 */
 function renderHistory(){
   const all=load(),el=$('#history');
-  if(!all.length){el.innerHTML='<div class="card">아직 기록이 없어요. 첫 리허설이 가장 큰 도약입니다.</div>';return}
+  if(!all.length){el.innerHTML='<div class="card">아직 발표 연습 기록이 없어요. 첫 리허설이 가장 큰 도약입니다.</div>'+slideCard();return}
   const mins=all.reduce((s,m)=>s+m.dur,0)/60;
   const days=[...new Set(all.map(m=>m.date.slice(0,10)))].sort();
   let streak=1;for(let i=days.length-1;i>0;i--){const d=(new Date(days[i])-new Date(days[i-1]))/864e5;if(d===1)streak++;else break}
@@ -440,8 +503,231 @@ function renderHistory(){
      ${trend(all.map(m=>m.goodPauses),'의도적 쉼 (회)',v=>v,false)}
     </div></div>
    <div class="card"><h2>리허설 목록</h2><table><tr><th>날짜</th><th>시간</th><th>속도</th><th>군더더기</th><th>압박</th><th></th></tr>
-    ${[...all].reverse().map(m=>`<tr><td>${new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${fmt(m.dur)}</td><td>${m.avg?Math.round(m.avg):'-'}</td><td>${m.hasSR?m.fillers:'-'}</td><td>${m.level||1}단계</td><td><button class="del" data-id="${m.id}">삭제</button></td></tr>`).join('')}</table></div>`;
+    ${[...all].reverse().map(m=>`<tr><td>${new Date(m.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${fmt(m.dur)}</td><td>${m.avg?Math.round(m.avg):'-'}</td><td>${m.hasSR?m.fillers:'-'}</td><td>${m.level||1}단계</td><td><button class="del" data-id="${m.id}">삭제</button></td></tr>`).join('')}</table></div>${slideCard()}`;
   el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{save(load().filter(m=>String(m.id)!==b.dataset.id));renderHistory()});
+}
+
+/* ================= 슬라이드 연습 모드 ================= */
+const SKEY2='ptcoach_slide_v1';
+let slides=[],deckKey='',S=null;
+const sload=()=>{try{return JSON.parse(localStorage.getItem(SKEY2)||'[]')}catch(e){return[]}};
+const ssave=a=>{try{localStorage.setItem(SKEY2,JSON.stringify(a))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const readURL=f=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});
+const loadScript=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)});
+const LVNAME=['','대본 보며','첫 문장+키워드','키워드만','장표만','장표 가림'];
+const PDF_SRC=[
+  ['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'],
+  ['https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js','https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js']
+];
+async function ensurePdfJs(){
+  if(window.pdfjsLib)return;
+  let last;for(const [js,worker] of PDF_SRC){try{await loadScript(js);pdfjsLib.GlobalWorkerOptions.workerSrc=worker;return}catch(e){last=e}}
+  throw last;
+}
+const deckSave=()=>{try{localStorage.setItem(deckKey,JSON.stringify(slides.map(({script,first,kw,link})=>({script,first,kw,link}))))}catch(e){}};
+
+$('#sFile').onchange=async e=>{
+  const files=[...e.target.files].sort((a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true}));
+  if(!files.length)return;
+  slides=[];$('#sOpts').classList.add('hide');$('#sEditor').innerHTML='';$('#sStatus').textContent='장표를 읽는 중…';
+  try{
+    for(const f of files){
+      if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+        await ensurePdfJs();
+        const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+        for(let i=1;i<=pdf.numPages;i++){
+          const pg=await pdf.getPage(i),v0=pg.getViewport({scale:1}),vp=pg.getViewport({scale:1280/v0.width});
+          const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+          await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+          slides.push({img:c.toDataURL('image/jpeg',0.8)});$('#sStatus').textContent=`장표 ${slides.length}장 읽는 중…`;
+        }
+      }else if(f.type.startsWith('image/')){slides.push({img:await readURL(f)})}
+    }
+  }catch(err){$('#sStatus').textContent='PDF를 읽지 못했어요. 인터넷 연결을 확인하거나, 장표를 이미지(PNG/JPG)로 올려 보세요.';slides=[];return}
+  if(!slides.length){$('#sStatus').textContent='읽을 수 있는 장표가 없어요. PDF 또는 이미지 파일을 올려 주세요.';return}
+  deckKey='ptcoach_deck_'+files.map(f=>f.name).join('|')+'_'+slides.length;
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(deckKey)||'[]')}catch(e){}
+  slides.forEach((s,i)=>Object.assign(s,{script:'',first:'',kw:'',link:''},saved[i]||{}));
+  renderEditor();
+};
+function renderEditor(){
+  $('#sStatus').textContent=`장표 ${slides.length}장을 불러왔어요. 장표마다 아래를 적어 두세요. 적는 것 자체가 기억 연습이에요. (비워둬도 괜찮아요)`;
+  $('#sEditor').innerHTML=slides.map((s,i)=>`<div class="sed"><div><img src="${s.img}" alt=""><div class="muted">${i+1}번 장표</div></div><div>
+    <input type="text" data-i="${i}" data-f="first" placeholder="첫 문장 (결론 한 문장)" value="${esc(s.first)}">
+    <input type="text" data-i="${i}" data-f="kw" placeholder="키워드 (쉼표로 구분, 3개 이하)" value="${esc(s.kw)}">
+    <input type="text" data-i="${i}" data-f="link" placeholder="다음 장 연결 문장" value="${esc(s.link)}">
+    <textarea data-i="${i}" data-f="script" placeholder="전체 대본 (선택, 1단계에서 보여요)">${esc(s.script)}</textarea></div></div>`).join('');
+  $('#sOpts').classList.remove('hide');
+}
+$('#sEditor').addEventListener('input',e=>{const t=e.target;if(t.dataset.i==null)return;slides[+t.dataset.i][t.dataset.f]=t.value;deckSave()});
+$('#sStart').onclick=sStart;
+$('#sNext').onclick=()=>sNext();
+$('#sPrev').onclick=()=>{if(S&&!S.cold&&S.pos>0)sEnter(S.pos-1)};
+$('#sEnd').onclick=()=>sFinish();
+
+const nowS=()=>(performance.now()-S.t0)/1000;
+function beep(){try{const o=S.ac.createOscillator(),g=S.ac.createGain(),t=S.ac.currentTime;o.frequency.value=880;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.12,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);o.connect(g);g.connect(S.ac.destination);o.start(t);o.stop(t+0.3)}catch(e){}}
+
+async function sStart(){
+  const lv=+document.querySelector('input[name=sl]:checked').value,cold=$('#sMode').value==='cold';
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){$('#sStatus').textContent='마이크 권한이 필요해요. 주소창의 자물쇠에서 마이크를 허용해 주세요.';return}
+  const ac=new (window.AudioContext||window.webkitAudioContext)();try{await ac.resume()}catch(e){}
+  const an=ac.createAnalyser();an.fftSize=1024;ac.createMediaStreamSource(stream).connect(an);
+  let order=slides.map((_,i)=>i);
+  if(cold){for(let i=order.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[order[i],order[j]]=[order[j],order[i]]}
+    order=order.slice(0,Math.max(1,Math.min(+$('#sRounds').value||5,order.length)))}
+  S={lv,cold,hints:$('#sHints').checked,order,pos:-1,st:[],cur:null,stream,ac,an,t0:performance.now(),run:true,
+     lastVoice:-99,thr:0.02,cal:[],text:'',prev:'',rec:null,timer:null,lvlT:null,keyfn:null};
+  $('#sSetup').classList.add('hide');$('#sResult').classList.add('hide');$('#sRun').classList.remove('hide');
+  $('#sPrev').classList.toggle('hide',cold);
+  // 마이크 레벨 / 음성 감지 / 막힘 힌트
+  const buf=new Float32Array(an.fftSize);
+  S.lvlT=setInterval(()=>{
+    if(!S||!S.run)return;
+    an.getFloatTimeDomainData(buf);let q=0;for(const v of buf)q+=v*v;const rms=Math.sqrt(q/buf.length);
+    $('#sLvl').style.width=Math.min(100,rms*600)+'%';
+    if(S.cal.length<8){S.cal.push(rms);if(S.cal.length===8){const m=[...S.cal].sort((a,b)=>a-b)[4];S.thr=Math.max(0.012,m*2.8)}return}
+    const st=S.cur;if(!st)return;const t=nowS(),voice=rms>S.thr;
+    if(voice){
+      if(st.first==null)st.first=Math.max(0,t-st.enter);
+      if(st.crisis){if(st.tier===0)st.selfRec++;else st.hintRec++;st.crisis=false}
+      S.lastVoice=t;
+    }
+    const sil=t-Math.max(S.lastVoice,st.enter);
+    st.maxSil=Math.max(st.maxSil,sil);
+    if(sil>=3&&!st.crisis){st.crisis=true;st.crisisN++}
+    if(S.hints){const want=sil>=9?2:sil>=5?1:0;if(want>st.tier){st.tier=want;sRender()}}
+  },100);
+  S.timer=setInterval(()=>{
+    if(!S||!S.run)return;const t=nowS(),st=S.cur;if(!st)return;
+    $('#sTime').textContent=`전체 ${fmt(t)} · 이 장표 ${fmt(t-st.enter)}`;
+    if(st.first==null){const sil=t-Math.max(S.lastVoice,st.enter);$('#sLat').textContent=S.cold?`${sil.toFixed(1)}초 · 3초 안에 첫 마디를 시작해 보세요`:`${sil.toFixed(1)}초`}
+    else $('#sLat').textContent=`시작까지 ${st.first.toFixed(1)}초 ${st.first<=3?'✓ 좋아요':''}`;
+  },200);
+  // 음성 인식 (키워드 언급 확인용)
+  if(SR){
+    const r=new SR();r.lang='ko-KR';r.continuous=true;r.interimResults=true;S.rec=r;
+    r.onresult=ev=>{let txt='';for(let i=0;i<ev.results.length;i++)txt+=ev.results[i][0].transcript+' ';S.text=S.prev+txt};
+    r.onend=()=>{if(S&&S.run){S.prev=S.text;try{r.start()}catch(e){}}};
+    r.onerror=()=>{};try{r.start()}catch(e){}
+  }
+  S.keyfn=e=>{
+    if(e.code==='Space'||e.key==='ArrowRight'){e.preventDefault();sNext()}
+    else if(e.key==='ArrowLeft'&&!S.cold&&S.pos>0){e.preventDefault();sEnter(S.pos-1)}
+  };
+  document.addEventListener('keydown',S.keyfn);
+  sEnter(0);
+}
+
+function sEnter(pos){
+  const t=nowS();
+  if(S.cur){S.cur.leave=t;S.cur.txt=S.text.slice(S.cur.txtStart)}
+  S.pos=pos;
+  S.cur={idx:S.order[pos],enter:t,first:null,tier:0,crisis:false,crisisN:0,selfRec:0,hintRec:0,maxSil:0,txtStart:S.text.length,leave:null,txt:''};
+  S.st.push(S.cur);
+  if(S.cold)beep();
+  sRender();
+}
+function sNext(){if(!S||!S.run)return;if(S.pos+1>=S.order.length)sFinish();else sEnter(S.pos+1)}
+
+function sRender(){
+  const st=S.cur,sl=slides[st.idx],lv=S.lv,tier=st.tier;
+  $('#sNo').textContent=S.cold?`라운드 ${S.pos+1} / ${S.order.length}`:`장표 ${st.idx+1} / ${slides.length}`;
+  $('#sNext').textContent=S.pos+1>=S.order.length?'마치기':(S.cold?'다음 랜덤 장표 (Space)':'다음 장표 (Space)');
+  $('#sImg').src=sl.img;
+  const showImg=lv<5||tier>=1;
+  $('#sImgWrap').classList.toggle('hide',!showImg);$('#sHide').classList.toggle('hide',showImg);
+  const kw=sl.kw.trim(),fs=sl.first.trim(),lk=sl.link.trim();
+  const showFirst=lv<=2||tier>=2,showKw=lv<=3||tier>=1,showLink=lv===1||tier>=2;
+  let h='';
+  if(lv===1&&sl.script.trim())h+=`<div class="cue"><span class="k">대본</span>${esc(sl.script).replace(/\n/g,'<br>')}</div>`;
+  else{
+    if(showFirst&&fs)h+=`<div class="cue"><span class="k">첫 문장</span>${esc(fs)}</div>`;
+    if(showKw&&kw)h+=`<div class="cue"><span class="k">키워드</span>${esc(kw)}</div>`;
+    if(showLink&&lk)h+=`<div class="cue"><span class="k">다음 장 연결</span>${esc(lk)}</div>`;
+  }
+  if(tier>=1)h+=`<div class="cue hint" style="font-size:15px">${tier>=2?'괜찮아요. 위 첫 문장으로 다시 시작해 보세요.':'막혀도 괜찮아요. 숨 한 번 쉬고, 복구 문장 "정리하면…"으로 이어가 보세요.'}</div>`;
+  $('#sCue').innerHTML=h;
+}
+
+function sFinish(){
+  if(!S||!S.run)return;S.run=false;
+  const t=nowS();if(S.cur){S.cur.leave=t;S.cur.txt=S.text.slice(S.cur.txtStart)}
+  clearInterval(S.timer);clearInterval(S.lvlT);document.removeEventListener('keydown',S.keyfn);
+  try{S.rec&&S.rec.stop()}catch(e){}
+  S.stream.getTracks().forEach(x=>x.stop());try{S.ac.close()}catch(e){}
+  $('#sRun').classList.add('hide');
+  sResultRender();
+}
+
+function sResultRender(){
+  const st=S.st,lv=S.lv,hasSR=S.text.length>0,n=st.length;
+  const rows=st.map(s=>{
+    const sl=slides[s.idx],kws=sl.kw.split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);
+    let cov=null;
+    if(hasSR&&kws.length){const tx=s.txt.replace(/\s/g,'');cov=kws.filter(k=>{const kk=k.replace(/\s/g,'');return tx.includes(kk.slice(0,Math.max(2,kk.length-1)))}).length/kws.length}
+    return Object.assign({},s,{cov});
+  });
+  const hintFree=rows.filter(r=>r.tier===0).length;
+  const lats=rows.filter(r=>r.first!=null).map(r=>r.first);
+  const avgLat=lats.length?lats.reduce((a,b)=>a+b,0)/lats.length:null;
+  const fast=lats.filter(x=>x<=3).length;
+  const selfRec=rows.reduce((a,r)=>a+r.selfRec,0),hintRec=rows.reduce((a,r)=>a+r.hintRec,0);
+  const covs=rows.filter(r=>r.cov!=null).map(r=>r.cov),cov=covs.length?covs.reduce((a,b)=>a+b,0)/covs.length:null;
+  const good=[`${n}번의 장표를 끝까지 이어갔어요. 장표만 보고 말해보려는 시도가 가장 큰 연습이에요.`];
+  if(hintFree===n&&n>1)good.push('모든 장표를 힌트 없이 풀어갔어요!');
+  else if(hintFree>0)good.push(`${hintFree}장은 힌트 없이 풀어갔어요.`);
+  if(fast>0)good.push(`${fast}장은 3초 안에 첫 마디를 시작했어요.`);
+  if(selfRec>0)good.push(`말이 막혔다가 힌트 없이 스스로 ${selfRec}번 복구했어요. 현장에서 가장 필요한 힘이에요.`);
+  if(cov!=null&&cov>=0.6)good.push(`키워드를 ${Math.round(cov*100)}% 짚었어요.`);
+  // 오늘 가장 힘들었던 장표 → 고칠 것 1개
+  const worst=[...rows].sort((a,b)=>(b.tier-a.tier)||((b.first??0)-(a.first??0)))[0];
+  const sl=slides[worst.idx];let next;
+  if(worst.tier>=1)next=sl.first.trim()?`${worst.idx+1}번 장표에서 힌트가 필요했어요. 이 장표의 <b>첫 문장</b>을 소리 내어 세 번 읽고, 다시 해보세요.`:`${worst.idx+1}번 장표에서 힌트가 필요했어요. 설정에서 이 장표의 <b>첫 문장(결론 한 문장)</b>을 적어 두면 훨씬 쉬워져요.`;
+  else if(worst.first!=null&&worst.first>3)next=`${worst.idx+1}번 장표는 시작까지 ${worst.first.toFixed(1)}초 걸렸어요. 장표 제목을 한 번 <b>소리 내어 읽으면서</b> 시작해 보세요.`;
+  else if(worst.cov!=null&&worst.cov<0.5)next=`${worst.idx+1}번 장표는 키워드가 잘 안 나왔어요. 키워드를 <b>3개 이하</b>로 줄여 보세요.`;
+  else next='지금 흐름이 아주 좋아요. 한 단계 내려가 볼까요?';
+  const ready=hintFree/n>=0.8&&(cov==null||cov>=0.5)&&(avgLat==null||avgLat<=3.5);
+  const up=lv>=5?(ready?'<div class="good"><b>최고 단계 통과!</b> 장표 없이 순서와 기억만으로 해냈어요. 이제 콜드 스타트와 압박 모드로 현장 감각을 굳혀 보세요.</div>':'<div class="muted" style="margin:8px 0">장표 가림 단계는 원래 어려워요. 한 번 더 도전하면 훨씬 편해집니다.</div>')
+    :(ready?`<div class="good"><b>준비됐어요!</b> 다음엔 ${lv+1}단계(${LVNAME[lv+1]})에 도전해 볼까요?</div>`:`<div class="muted" style="margin:8px 0">${lv}단계를 한 번 더 하면 ${lv+1}단계로 올라갈 준비가 됩니다.</div>`);
+  const tierName=['없음','키워드','첫 문장'];
+  const mx=Math.max(...rows.map(r=>r.maxSil),1);
+  const a=sload();
+  a.push({date:new Date().toISOString(),mode:S.cold?'cold':'seq',level:lv,n,hintFree,ratio:hintFree/n,avgLat,selfRec,hintRec,cov,passed:ready});
+  ssave(a);
+  const el=$('#sResult');el.classList.remove('hide');
+  el.innerHTML=`
+   <h2>슬라이드 연습 결과 · ${lv}단계(${LVNAME[lv]}) · ${S.cold?'콜드 스타트':'순서대로'}</h2>
+   <h3 style="margin:8px 0 4px;font-size:15px">잘한 점</h3>
+   ${good.map(g=>`<div class="good">${g}</div>`).join('')}
+   <h3 style="margin:14px 0 4px;font-size:15px">다음에 딱 하나만</h3>
+   <div class="next">${next}</div>
+   ${up}
+   <div class="grid" style="margin:14px 0">
+     <div class="stat"><b>${hintFree}/${n}</b><span>힌트 없이 푼 장표</span></div>
+     <div class="stat"><b>${avgLat!=null?avgLat.toFixed(1)+'초':'-'}</b><span>첫 마디까지 평균</span></div>
+     <div class="stat"><b>${selfRec}</b><span>스스로 복구(회)</span></div>
+     <div class="stat"><b>${cov!=null?Math.round(cov*100)+'%':'-'}</b><span>키워드 언급</span></div>
+   </div>
+   <table><tr><th>장표</th><th>시작까지</th><th>가장 긴 침묵</th><th>힌트</th><th>키워드</th></tr>
+   ${rows.map(r=>`<tr${r===worst&&(r.tier>=1||(r.first!=null&&r.first>3))?' style="background:var(--warm-soft)"':''}><td>${r.idx+1}번</td><td>${r.first!=null?r.first.toFixed(1)+'초':'-'}</td>
+     <td><div class="bar" style="width:90px;display:inline-block;vertical-align:middle"><i style="width:${r.maxSil/mx*100}%;background:var(--warm)"></i></div> ${r.maxSil.toFixed(1)}초</td>
+     <td>${tierName[r.tier]}</td><td>${r.cov!=null?Math.round(r.cov*100)+'%':'-'}</td></tr>`).join('')}</table>
+   <div class="row" style="margin-top:14px"><button class="btn" id="sAgain">한 번 더</button><button class="btn ghost" id="sHist">성장 기록 보기</button></div>`;
+  $('#sAgain').onclick=()=>{$('#sResult').classList.add('hide');$('#sSetup').classList.remove('hide')};
+  $('#sHist').onclick=()=>document.querySelector('[data-t=history]').click();
+}
+
+function slideCard(){
+  const a=sload();if(!a.length)return'';
+  const best=Math.max(0,...a.filter(s=>s.passed).map(s=>s.level));
+  return `<div class="card"><h2>슬라이드 연습 기록</h2>
+   <div class="grid"><div class="stat"><b>${a.length}회</b><span>누적 슬라이드 연습</span></div>
+   <div class="stat"><b>${best?best+'단계':'-'}</b><span>통과한 최고 단계 (${best?LVNAME[best]:'도전 중'})</span></div></div>
+   <table style="margin-top:10px"><tr><th>날짜</th><th>단계</th><th>방식</th><th>힌트 없이</th><th>평균 시작</th><th>복구</th></tr>
+   ${[...a].reverse().slice(0,15).map(s=>`<tr><td>${new Date(s.date).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${s.level}단계${s.passed?' ✓':''}</td><td>${s.mode==='cold'?'콜드':'순서'}</td><td>${s.hintFree}/${s.n}</td><td>${s.avgLat!=null?s.avgLat.toFixed(1)+'초':'-'}</td><td>${s.selfRec}</td></tr>`).join('')}</table></div>`;
 }
 })();
 </script>
