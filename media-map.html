@@ -1,0 +1,398 @@
+<title>매체 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a territory map. Four zones (OOH, digital, TV, cross-cutting rules), each divided into
+   category regions that hold media chips. Chip style encodes collection status, zone hue encodes territory. */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #17202a;
+  --ink-2: #4b5866;
+  --line: #cfd7df;
+  --ooh: #0b7a75;
+  --ooh-tint: #d8eeec;
+  --dig: #3a56d4;
+  --dig-tint: #dde3fa;
+  --tv: #b8480f;
+  --tv-tint: #f6e1d3;
+  --rule: #5b6470;
+  --rule-tint: #e1e5ea;
+  --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #17202a; --ink: #e8edf2; --ink-2: #9fadbb; --line: #2c3947;
+    --ooh: #4cc3bb; --ooh-tint: #12312f;
+    --dig: #8aa0ff; --dig-tint: #1b2552;
+    --tv: #f0966a; --tv-tint: #3a2216;
+    --rule: #9aa6b3; --rule-tint: #222c37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #17202a; --ink: #e8edf2; --ink-2: #9fadbb; --line: #2c3947;
+  --ooh: #4cc3bb; --ooh-tint: #12312f;
+  --dig: #8aa0ff; --dig-tint: #1b2552;
+  --tv: #f0966a; --tv-tint: #3a2216;
+  --rule: #9aa6b3; --rule-tint: #222c37;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.55;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.15; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+.lede { margin: 6px 0 0; color: var(--ink-2); max-width: 62ch; }
+.asof { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; }
+
+.bar { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.fbtn {
+  font: inherit; font-size: 0.82rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 6px 12px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+}
+.fbtn[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.fbtn:focus-visible, .chip:focus-visible, #q:focus-visible { outline: 2px solid var(--dig); outline-offset: 2px; }
+.fbtn .n { font-family: var(--mono); color: var(--ink-2); font-size: 0.75rem; }
+.swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1.5px solid var(--ink-2); }
+.sw-ok { background: var(--ink-2); }
+.sw-part { background: linear-gradient(135deg, var(--ink-2) 50%, transparent 50%); }
+.sw-src { border-style: dashed; }
+.sw-none { border-color: var(--line); }
+#q {
+  font: inherit; font-size: 0.88rem; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); min-width: 0; width: min(260px, 100%); margin-left: auto;
+}
+
+.zone { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.zone-head { padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; background: var(--z-tint); border-bottom: 1px solid var(--line); }
+.zone-head h2 { margin: 0; font-size: 1.2rem; color: var(--z); letter-spacing: -0.01em; }
+.zone-head p { margin: 0; color: var(--ink-2); font-size: 0.86rem; flex: 1 1 320px; min-width: 0; }
+.zone-head .cnt { font-family: var(--mono); font-size: 0.74rem; color: var(--ink-2); }
+.regions { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1px; background: var(--line); }
+.region { background: var(--surface); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.region h3 { margin: 0; font-size: 0.98rem; }
+.meta { margin: 0; font-size: 0.74rem; color: var(--ink-2); line-height: 1.5; }
+.meta b { font-family: var(--mono); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 0.8rem; padding: 4px 10px; border-radius: 7px; cursor: pointer; text-align: left;
+  border: 1.5px solid var(--line); background: transparent; color: var(--ink); min-width: 0;
+}
+.chip[data-s="ok"] { background: var(--z); border-color: var(--z); color: var(--on-z); }
+.chip[data-s="part"] { background: var(--z-tint); border-color: var(--z); }
+.chip[data-s="src"] { border: 1.5px dashed var(--z); }
+.chip[data-s="none"] { color: var(--ink-2); }
+.chip[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--ink); }
+.chip.dim { opacity: 0.18; }
+.detail { font-size: 0.8rem; border-left: 3px solid var(--z); padding: 6px 10px; background: var(--z-tint); border-radius: 0 6px 6px 0; }
+.detail strong { display: block; margin-bottom: 2px; }
+.detail .st { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.05em; color: var(--ink-2); }
+
+.z-ooh { --z: var(--ooh); --z-tint: var(--ooh-tint); --on-z: #fff; }
+.z-dig { --z: var(--dig); --z-tint: var(--dig-tint); --on-z: #fff; }
+.z-tv  { --z: var(--tv);  --z-tint: var(--tv-tint);  --on-z: #fff; }
+.z-rule{ --z: var(--rule); --z-tint: var(--rule-tint); --on-z: var(--bg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .z-ooh, :root:not([data-theme="light"]) .z-dig, :root:not([data-theme="light"]) .z-tv { --on-z: #0f151b; } }
+:root[data-theme="dark"] .z-ooh, :root[data-theme="dark"] .z-dig, :root[data-theme="dark"] .z-tv { --on-z: #0f151b; }
+
+.border { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.border h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.border > p { margin: 0 0 12px; color: var(--ink-2); font-size: 0.86rem; }
+.bl { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.bl li { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; min-width: 0; }
+.bl .t { font-weight: 700; display: block; margin-bottom: 2px; }
+.bl .x { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-2); letter-spacing: 0.04em; }
+.foot { font-size: 0.78rem; color: var(--ink-2); max-width: 80ch; }
+.foot ul { margin: 6px 0 0; padding-left: 1.2em; }
+.empty { display: none; padding: 24px; text-align: center; color: var(--ink-2); }
+@media (prefers-reduced-motion: no-preference) { .chip, .fbtn { transition: opacity .15s, box-shadow .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="asof">2026-11-23 기준 · 초안 분류</div>
+    <h1>매체 지도</h1>
+    <p class="lede">옥외, 디지털, TV, 그리고 매체를 가로지르는 심의·규정까지 한 장에 펼쳤습니다. 매체를 누르면 지금까지 확인한 내용이 보입니다. 칸의 모양은 수집 상태를 뜻합니다.</p>
+  </header>
+
+  <div class="bar">
+    <div class="legend" id="legend" role="group" aria-label="수집 상태 필터"></div>
+    <input id="q" type="search" placeholder="매체 검색 (예: CGV, 유튜브)" aria-label="매체 검색">
+  </div>
+
+  <main id="map"></main>
+  <div class="empty" id="empty">검색 조건에 맞는 매체가 없습니다.</div>
+
+  <section class="border" aria-labelledby="bh">
+    <h2 id="bh">경계 지대</h2>
+    <p>한 매체가 두 영역에 걸쳐 있는 곳입니다. 규격과 심의가 두 쪽 규칙을 함께 따르는 경우가 많아서 따로 표시했습니다.</p>
+    <ul class="bl">
+      <li><span class="t">프로그래매틱 DOOH</span><span class="x">옥외 ∩ 디지털</span><br>옥외 화면을 플랫폼으로 사고, 소재는 여러 해상도로 대응해야 합니다.</li>
+      <li><span class="t">CTV · 스마트TV · OTT</span><span class="x">TV ∩ 디지털</span><br>TV 화면에 디지털 타깃팅을 붙인 영역입니다.</li>
+      <li><span class="t">극장광고</span><span class="x">옥외(공간) ∩ TV(영상)</span><br>공간 매체지만 소재는 영상물이고, 영상물등급위원회 심의를 거칩니다.</li>
+      <li><span class="t">엘리베이터TV</span><span class="x">옥외 실내 ∩ 방송형 영상</span><br>생활 동선에 있는 세로형 화면이고, 매체사 자체 심의가 있습니다.</li>
+      <li><span class="t">리테일 스크린</span><span class="x">옥외 ∩ 커머스</span><br>백화점, 편의점, 마트 안 화면입니다. 리테일미디어와 규정이 겹칩니다.</li>
+    </ul>
+  </section>
+
+  <footer class="foot">
+    <strong>이 지도를 읽는 법</strong>
+    <ul>
+      <li>분류는 초안입니다. 칸을 늘리거나 합치는 건 자유롭게 정하시면 됩니다.</li>
+      <li>상태는 2026-11-23까지 한 작업만 반영했습니다. 메일 스캔, 첨부 추출 5건, 공식 URL 접속 확인, CGV 공식 PDF 대조입니다.</li>
+      <li>"소재 형태"와 "가이드 경로"는 일반적인 경향이며 매체별 검증 전입니다.</li>
+      <li>칸이 비어 있다고 규격이 없다는 뜻은 아닙니다. 아직 보지 않았다는 뜻입니다.</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+var STATUS = {
+  ok:   { label: "검증됨", desc: "공식 문서와 다른 소스를 대조해 일치 확인" },
+  part: { label: "부분 확인", desc: "일부 수치 또는 공식 URL만 확인, 대조 미완" },
+  src:  { label: "소스 후보", desc: "메일·URL이 있으나 아직 추출 전" },
+  none: { label: "미착수", desc: "아직 보지 않음" }
+};
+var ZONES = [
+  { id: "ooh", cls: "z-ooh", name: "옥외 · OOH", blurb: "길 위와 건물 안에서 만나는 매체. 인쇄와 영상이 섞여 있고 규격이 매체마다 다릅니다.",
+    regions: [
+      { name: "대형 LED · 미디어파사드", form: "영상 루프, 비정형 해상도", route: "매체사·렙사 PDF, 영업 문의", items: [
+        { n: "강남·명동·홍대 대형 LED", s: "none", note: "위치별 해상도와 슬롯 초수를 수집해야 합니다." },
+        { n: "빌딩 미디어파사드", s: "none", note: "비정형 해상도가 많아 매체별 제작 템플릿이 필요합니다." },
+        { n: "성수 외벽 · DOOH", s: "src", note: "올이즈웰(지디아·성수 DOOH)과 인컴이즈(성수 외벽 리스트) 메일이 있습니다. 첨부는 아직 추출하지 않았습니다." },
+        { n: "로드블럭 여의12", s: "src", note: "올이즈웰 2026 소개서 메일이 있습니다. 미추출." }
+      ]},
+      { name: "지하철 · 철도", form: "인쇄 + 디지털(DID)", route: "운영사 공고, 렙사 PDF", items: [
+        { n: "지하철 포스터·스크린도어·역사 보드", s: "none", note: "운영사별 심의 기준을 함께 봐야 합니다." },
+        { n: "지하철 DID", s: "none", note: "" },
+        { n: "울산역 KTX 영상", s: "part", note: "렙사(애드타입) 전달 내용: 20초 이하 불가, 30초 소재, 15구좌, 일 204회 송출. 매체사 원문 미대조." }
+      ]},
+      { name: "버스 · 택시 · 정류장", form: "인쇄(재단선), 일부 영상", route: "렙사 PDF", items: [
+        { n: "버스 외부 랩핑", s: "none", note: "" },
+        { n: "울산 시내버스 내부 영상", s: "part", note: "렙사 전달 내용: 15초 불가, 30초 기준, 최소 50대~최대 350대. 매체사 원문 미대조." },
+        { n: "정류장 쉘터", s: "none", note: "" },
+        { n: "택시", s: "none", note: "" }
+      ]},
+      { name: "공항 · 터미널", form: "디지털 + 인쇄", route: "운영사 별도 심의, 렙사", items: [
+        { n: "인천·김포 공항", s: "src", note: "올이즈웰 공항매체 인벤토리 확인 메일이 있습니다. 미추출." },
+        { n: "고속·시외버스 터미널", s: "none", note: "" }
+      ]},
+      { name: "생활 동선 · 실내", form: "세로형 영상, 짧은 루프", route: "매체사 가이드 사이트, 제안서", items: [
+        { n: "엘리베이터TV (포커스미디어)", s: "part", note: "제안서에서 15초/20초, 편성 마감 D-2, 25인치 세로형 등을 확인했습니다. 파일 규격은 제안서에 없고 공식 가이드 페이지 확인이 필요합니다." },
+        { n: "아파트 게시판·엘리베이터 내부", s: "none", note: "" },
+        { n: "오피스·빌딩 로비", s: "none", note: "" },
+        { n: "백화점·쇼핑몰", s: "src", note: "백화점 OOH 제안 메일이 있으나 내부 제안 자료라 규격 소스는 아닙니다." },
+        { n: "명품 관련 OOH", s: "src", note: "올이즈웰 매체 리스트 확인 요청 메일이 있습니다. 미추출." },
+        { n: "편의점·마트", s: "none", note: "" }
+      ]},
+      { name: "극장", form: "영상물, 음향 포함", route: "매체사 PDF, 영상물등급위원회", items: [
+        { n: "CGV 스크린", s: "ok", note: "이메일 pptx와 CGV 공식 PDF(2026-03-11)를 대조해 길이·코덱·오디오·D-3 입고·심의 접수가 일치했습니다. 용량 30초 기준 300MB는 공식 PDF 값입니다. 해상도 1920x1080은 PDF 칸 확인이 남았습니다." },
+        { n: "CGV 메트로라이브", s: "ok", note: "해상도 1,920x540이 공식 PDF 97쪽과 일치합니다. Level 4.1·5Mbps·5영업일은 공식 PDF 쪽 별도 확인이 필요합니다." },
+        { n: "롯데시네마", s: "part", note: "울산 2개소 16개 상영관, 지역 매체는 일반(R)·A·Great 존만 가능(렙사 전달). 제작 규격은 미추출." },
+        { n: "메가박스 (MegaM)", s: "part", note: "지역 타겟팅 상품은 티켓타임 전 송출(렙사 전달). 제작 규격은 미추출." }
+      ]},
+      { name: "프로그래매틱 DOOH", form: "다규격, 동적 소재", route: "플랫폼 문서", items: [
+        { n: "플랫폼형 DOOH 구매 채널", s: "none", note: "대상 플랫폼부터 정해야 합니다." }
+      ]}
+    ]},
+  { id: "dig", cls: "z-dig", name: "디지털", blurb: "공식 가이드 URL이 있고 자주 바뀌는 영역. 링크를 등록해 버전을 추적하는 것이 핵심입니다.",
+    regions: [
+      { name: "검색 · 포털", form: "텍스트 + 이미지 + 영상", route: "공식 도움말 URL", items: [
+        { n: "네이버 (검색광고·GFA·브랜딩DA)", s: "src", note: "ads.naver.com 홈만 접속 확인. 소재 가이드 상세 URL은 아직 정하지 못했습니다." },
+        { n: "카카오 모먼트 · 비즈보드", s: "part", note: "공식 GitBook 문서 2건 접속 확인(ETag 안정). 본문 규격 추출 전입니다." },
+        { n: "구글 검색 · 디스플레이", s: "none", note: "" }
+      ]},
+      { name: "영상 플랫폼", form: "세로·가로 영상", route: "공식 도움말 URL", items: [
+        { n: "유튜브 (범퍼·인스트림·쇼츠)", s: "part", note: "Google Ads 도움말 2건 접속 확인. 본문 해시가 요청마다 달라 정규화가 필요합니다." },
+        { n: "틱톡", s: "part", note: "TopView 규격 도움말 접속 확인(ETag 안정). 인피드 규격 페이지는 확정 전입니다." },
+        { n: "네이버 클립", s: "none", note: "" }
+      ]},
+      { name: "SNS", form: "피드·스토리·릴스", route: "공식 광고 가이드", items: [
+        { n: "인스타그램 피드·스토리·릴스", s: "part", note: "내부 가이드 값(4:5 1440x1800, 9:16 1440x2560)이 웹 2차 자료와 일치합니다. 공식 페이지 본문 확인이 남았습니다." },
+        { n: "메타 광고 가이드 (공식)", s: "part", note: "URL 접속 확인. 규격표가 JS로 그려져서 브라우저 렌더링이 필요합니다." },
+        { n: "X · 스레드 · 링크드인", s: "none", note: "" }
+      ]},
+      { name: "앱 · 플랫폼", form: "배너, 푸시, 네이티브", route: "광고주 콘솔, 영업 문의", items: [
+        { n: "당근", s: "none", note: "" },
+        { n: "토스", s: "none", note: "" },
+        { n: "카카오T", s: "none", note: "" }
+      ]},
+      { name: "커머스 · 리테일미디어", form: "상품 연동, 배너", route: "광고주 콘솔", items: [
+        { n: "쿠팡", s: "none", note: "" },
+        { n: "올리브영 (버즈빌 협력광고)", s: "src", note: "버즈빌 영업 메일이 있으나 규격 가이드인지는 확인 전입니다." },
+        { n: "11번가 · 마켓컬리", s: "none", note: "" }
+      ]},
+      { name: "OTT · CTV", form: "15·30초 영상", route: "플랫폼 영업 문의", items: [
+        { n: "티빙", s: "none", note: "" },
+        { n: "웨이브", s: "none", note: "" },
+        { n: "쿠팡플레이", s: "none", note: "" },
+        { n: "넷플릭스 광고요금제", s: "none", note: "" },
+        { n: "스마트TV 광고", s: "none", note: "" }
+      ]},
+      { name: "오디오", form: "오디오 + 컴패니언 배너", route: "플랫폼 가이드", items: [
+        { n: "스포티파이", s: "none", note: "" },
+        { n: "멜론", s: "none", note: "" }
+      ]},
+      { name: "리포트 · 미디어렙", form: "시장 자료(규격 아님)", route: "뉴스레터", items: [
+        { n: "나스미디어 월간 보고서", s: "src", note: "월간 미디어 이슈 메일이 옵니다. 규격 가이드가 아니라 변경 신호용 소스입니다." }
+      ]}
+    ]},
+  { id: "tv", cls: "z-tv", name: "TV · 방송", blurb: "방송 규격과 사전심의가 중심인 영역. 납품 형식과 심의 일정이 규격만큼 중요합니다.",
+    regions: [
+      { name: "지상파 · 케이블 · 종편 CM", form: "15·20·30초 영상", route: "방송광고 판매 대행, 방송사 납품 규격", items: [
+        { n: "KBS · MBC · SBS CM", s: "none", note: "TVC 큐시트와 주간 리포트 메일은 있으나(알페신) 납품 규격 가이드는 아닙니다." },
+        { n: "케이블 · 종편 CM", s: "none", note: "" },
+        { n: "한국방송광고진흥공사 판매 구조", s: "none", note: "" }
+      ]},
+      { name: "IPTV · VOD", form: "세트톱·스마트TV 영상", route: "사업자 영업 문의", items: [
+        { n: "IPTV 광고", s: "none", note: "" },
+        { n: "VOD 광고", s: "none", note: "" }
+      ]},
+      { name: "라디오", form: "오디오 CM", route: "방송사 납품 규격", items: [
+        { n: "라디오 CM", s: "none", note: "" }
+      ]},
+      { name: "협찬 · PPL · 자막", form: "규정 중심", route: "방송사 규정", items: [
+        { n: "협찬·PPL·자막광고", s: "none", note: "" }
+      ]},
+      { name: "방송광고 심의", form: "사전심의 절차", route: "심의기관 공지", items: [
+        { n: "방송광고 사전심의", s: "none", note: "" }
+      ]}
+    ]},
+  { id: "rule", cls: "z-rule", name: "횡단 규정 · 심의", blurb: "매체와 관계없이 소재 내용에 걸리는 규정. 매체 규격과 별도 레이어로 쌓습니다.",
+    regions: [
+      { name: "법령 · 조례", form: "문서", route: "법제처, 지자체", items: [
+        { n: "옥외광고물법·지자체 조례", s: "none", note: "" }
+      ]},
+      { name: "운영사 심의", form: "매체사별 기준", route: "운영사 공고", items: [
+        { n: "지하철·공항 광고 심의", s: "none", note: "" },
+        { n: "CGV 자체 심의 대상 업종 (14종)", s: "ok", note: "의약품·의료기기·병원·주류·담배·사행성·대출·게임·식품·건기식·다이어트·화장품·영화·보험. 공식 PDF와 이메일 첨부가 일치합니다." }
+      ]},
+      { name: "업종별 규제", form: "필수 표기·금지 표현", route: "협회·심의기구", items: [
+        { n: "의약품·의료기기·병원", s: "part", note: "CGV 가이드에 경고문구·심의번호 요건이 있습니다. 협회 원문은 미확인." },
+        { n: "주류", s: "part", note: "CGV: 무비패키지만 집행, 경고문구 흰 박스. 원문 법령 미확인." },
+        { n: "금융·대부", s: "part", note: "CGV: 대부업 필수 표기 9종. 원문 미확인." },
+        { n: "화장품·건강기능식품", s: "none", note: "" }
+      ]},
+      { name: "플랫폼 광고 정책", form: "금지·제한 콘텐츠", route: "플랫폼 정책 센터", items: [
+        { n: "메타·구글·네이버 정책", s: "none", note: "정책 변경 공지 URL을 레지스트리에 등록해야 합니다." }
+      ]}
+    ]}
+];
+
+var state = { filter: "all", q: "" };
+var mapEl = document.getElementById("map");
+var legendEl = document.getElementById("legend");
+var emptyEl = document.getElementById("empty");
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function counts() {
+  var c = { all: 0, ok: 0, part: 0, src: 0, none: 0 };
+  ZONES.forEach(function (z) { z.regions.forEach(function (r) { r.items.forEach(function (i) { c.all++; c[i.s]++; }); }); });
+  return c;
+}
+
+function renderLegend() {
+  var c = counts();
+  legendEl.textContent = "";
+  var defs = [["all", "전체", null]].concat(Object.keys(STATUS).map(function (k) { return [k, STATUS[k].label, k]; }));
+  defs.forEach(function (d) {
+    var b = el("button", "fbtn");
+    b.type = "button";
+    b.setAttribute("aria-pressed", state.filter === d[0] ? "true" : "false");
+    b.title = d[2] ? STATUS[d[2]].desc : "모든 매체";
+    if (d[2]) { b.appendChild(el("span", "swatch sw-" + d[2])); }
+    b.appendChild(el("span", null, d[1]));
+    b.appendChild(el("span", "n", String(c[d[0]])));
+    b.addEventListener("click", function () { state.filter = d[0]; renderLegend(); applyFilter(); });
+    legendEl.appendChild(b);
+  });
+}
+
+function build() {
+  mapEl.textContent = "";
+  mapEl.style.display = "flex"; mapEl.style.flexDirection = "column"; mapEl.style.gap = "22px";
+  ZONES.forEach(function (z) {
+    var sec = el("section", "zone " + z.cls);
+    sec.dataset.zone = z.id;
+    var head = el("div", "zone-head");
+    head.appendChild(el("h2", null, z.name));
+    head.appendChild(el("p", null, z.blurb));
+    var n = 0; z.regions.forEach(function (r) { n += r.items.length; });
+    var cnt = el("span", "cnt", z.regions.length + "개 구역 · " + n + "개 매체");
+    cnt.dataset.cnt = "1";
+    head.appendChild(cnt);
+    sec.appendChild(head);
+    var grid = el("div", "regions");
+    z.regions.forEach(function (r) {
+      var reg = el("div", "region");
+      reg.appendChild(el("h3", null, r.name));
+      var m = el("p", "meta");
+      var b1 = el("b", null, "소재 형태"); m.appendChild(b1); m.appendChild(document.createTextNode(r.form));
+      m.appendChild(document.createElement("br"));
+      var b2 = el("b", null, "가이드 경로"); m.appendChild(b2); m.appendChild(document.createTextNode(r.route));
+      reg.appendChild(m);
+      var chips = el("div", "chips");
+      var detail = el("div", "detail"); detail.hidden = true;
+      r.items.forEach(function (it) {
+        var c = el("button", "chip", it.n);
+        c.type = "button"; c.dataset.s = it.s; c.setAttribute("aria-expanded", "false");
+        c.addEventListener("click", function () {
+          var open = c.getAttribute("aria-expanded") === "true";
+          chips.querySelectorAll(".chip").forEach(function (x) { x.setAttribute("aria-expanded", "false"); });
+          if (open) { detail.hidden = true; return; }
+          c.setAttribute("aria-expanded", "true");
+          detail.textContent = "";
+          detail.appendChild(el("strong", null, it.n));
+          detail.appendChild(el("span", "st", STATUS[it.s].label.toUpperCase() + " · " + STATUS[it.s].desc));
+          if (it.note) { detail.appendChild(document.createElement("br")); detail.appendChild(document.createTextNode(it.note)); }
+          detail.hidden = false;
+        });
+        chips.appendChild(c);
+      });
+      reg.appendChild(chips);
+      reg.appendChild(detail);
+      grid.appendChild(reg);
+    });
+    sec.appendChild(grid);
+    mapEl.appendChild(sec);
+  });
+}
+
+function applyFilter() {
+  var q = state.q.trim().toLowerCase();
+  var any = false;
+  mapEl.querySelectorAll(".zone").forEach(function (sec) {
+    var zoneHits = 0;
+    sec.querySelectorAll(".region").forEach(function (reg) {
+      var hits = 0;
+      reg.querySelectorAll(".chip").forEach(function (c) {
+        var okS = state.filter === "all" || c.dataset.s === state.filter;
+        var okQ = !q || c.textContent.toLowerCase().indexOf(q) >= 0 || reg.querySelector("h3").textContent.toLowerCase().indexOf(q) >= 0;
+        var show = okS && okQ;
+        c.classList.toggle("dim", !show);
+        if (show) hits++;
+      });
+      reg.hidden = hits === 0 && (state.filter !== "all" || q !== "");
+      zoneHits += hits;
+    });
+    sec.hidden = zoneHits === 0 && (state.filter !== "all" || q !== "");
+    if (!sec.hidden) any = true;
+  });
+  emptyEl.style.display = any ? "none" : "block";
+}
+
+document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value; applyFilter(); });
+build(); renderLegend(); applyFilter();
+</script>
