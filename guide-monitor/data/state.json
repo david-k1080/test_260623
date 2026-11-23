@@ -1,0 +1,90 @@
+{
+ "cgv_contents_guide": {
+  "current": "d383f81e34150a70",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "d383f81e34150a70"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "google_video_specs": {
+  "current": "9f7cebc1d97fe65a",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "9f7cebc1d97fe65a"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "google_shorts_ads": {
+  "current": "a2c2eda43ff607b0",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "a2c2eda43ff607b0"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "kakao_moment_content": {
+  "current": "etag:9ee3f14fe0fb951c5bea40db09831304",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "etag:9ee3f14fe0fb951c5bea40db09831304"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "kakao_moment_adunit": {
+  "current": "etag:901b0ae96f4d9763351b5f629cff7624",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "etag:901b0ae96f4d9763351b5f629cff7624"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "tiktok_topview": {
+  "current": "etag:180ef1-2a+eFxDJ8dTeUtGhQbZQkL599DA",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "etag:180ef1-2a+eFxDJ8dTeUtGhQbZQkL599DA"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "focus_guide": {
+  "current": "a1318ab015450987",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "a1318ab015450987"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ },
+ "meta_ads_guide": {
+  "current": "e490dde4c58f9971",
+  "pending": null,
+  "history": [
+   {
+    "date": "2026-11-23",
+    "fp": "e490dde4c58f9971"
+   }
+  ],
+  "last_checked": "2026-11-23"
+ }
+}
