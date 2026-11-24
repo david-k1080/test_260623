@@ -1,0 +1,1126 @@
+<title>매체 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a radial mind map. Centre -> 4 territories -> category regions -> media leaves.
+   Node ring style encodes collection status; territory hue encodes branch. Logos sit in the leaf badge. */
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --ink: #17202a; --ink-2: #4b5866; --line: #cfd7df; --muted: #8a96a3; --accent: #d9480f;
+  --ooh: #0b7a75; --ooh-tint: #d8eeec; --dig: #3a56d4; --dig-tint: #dde3fa; --tv: #b8480f; --tv-tint: #f6e1d3; --rule: #5b6470; --rule-tint: #e1e5ea;
+  --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #17202a; --ink: #e8edf2; --ink-2: #9fadbb; --line: #2c3947; --muted: #6f7d8b; --accent: #ff8f5a;
+    --ooh: #4cc3bb; --ooh-tint: #12312f; --dig: #8aa0ff; --dig-tint: #1b2552; --tv: #f0966a; --tv-tint: #3a2216; --rule: #9aa6b3; --rule-tint: #222c37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #17202a; --ink: #e8edf2; --ink-2: #9fadbb; --line: #2c3947; --muted: #6f7d8b; --accent: #ff8f5a;
+  --ooh: #4cc3bb; --ooh-tint: #12312f; --dig: #8aa0ff; --dig-tint: #1b2552; --tv: #f0966a; --tv-tint: #3a2216; --rule: #9aa6b3; --rule-tint: #222c37;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.5; margin: 0;
+  padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+h1 { font-size: clamp(1.5rem, 3.4vw, 2.1rem); margin: 0; letter-spacing: -0.02em; line-height: 1.15; }
+.asof { font-family: var(--mono); font-size: .72rem; color: var(--ink-2); letter-spacing: .04em; text-transform: uppercase; }
+.lede { margin: 4px 0 0; color: var(--ink-2); font-size: .9rem; max-width: 70ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: inherit; }
+.btn { font-size: .8rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 5px 11px; border-radius: 999px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+.btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.btn .n { font-family: var(--mono); color: var(--ink-2); font-size: .72rem; }
+.btn:focus-visible, #q:focus-visible, .node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#q { font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: min(240px, 100%); margin-left: auto; min-width: 0; }
+.sw { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink-2); background: transparent; display: inline-block; }
+.sw.ok { border-width: 3.5px; } .sw.part { border-width: 2.5px; } .sw.src { border-style: dashed; border-width: 2px; } .sw.none { border-style: dotted; border-color: var(--muted); border-width: 2px; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+@media (max-width: 960px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; height: min(78vh, 820px); min-height: 460px; }
+#svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+#svg.drag { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 6px; }
+.zoom .btn { width: 34px; height: 34px; padding: 0; justify-content: center; font-size: 1.05rem; border-radius: 10px; }
+.hint { position: absolute; left: 12px; bottom: 10px; font-size: .72rem; color: var(--ink-2); background: color-mix(in srgb, var(--surface) 86%, transparent); padding: 3px 8px; border-radius: 6px; }
+
+.edge { fill: none; stroke-width: 1.6; opacity: .55; }
+.node { cursor: pointer; }
+.node .ring { fill: none; stroke: var(--zc); }
+.node.s-ok .ring { stroke-width: 3.5; } .node.s-part .ring { stroke-width: 2.5; }
+.node.s-src .ring { stroke-width: 2; stroke-dasharray: 4 3; }
+.node.s-none .ring { stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 1.5 3; }
+.node.s-none .badge { opacity: .55; }
+.node.dim { opacity: .14; }
+.node.hit .ring { stroke: var(--accent); stroke-width: 4; stroke-dasharray: none; }
+.node.sel .halo { opacity: 1; }
+.halo { fill: none; stroke: var(--ink); stroke-width: 1.5; opacity: 0; }
+.lbl { fill: var(--ink); font-size: 12px; pointer-events: none; }
+.lbl.reg { font-weight: 700; font-size: 12.5px; }
+.zname { fill: #fff; font-size: 13px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+.cnt { font-family: var(--mono); font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; pointer-events: none; fill: var(--ink); }
+.ini { font-size: 11px; font-weight: 800; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 12px; min-width: 0; }
+@media (max-width: 960px) { .panel { position: static; } }
+.panel h2 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+.crumb { font-family: var(--mono); font-size: .7rem; color: var(--ink-2); letter-spacing: .03em; }
+.pill { display: inline-flex; align-items: center; gap: 7px; font-size: .78rem; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; width: fit-content; }
+.note { font-size: .86rem; margin: 0; }
+.kv { font-size: .78rem; color: var(--ink-2); margin: 0; }
+.kv b { font-family: var(--mono); font-weight: 500; font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; margin-right: 6px; }
+.logo-row { display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 10px; }
+.logo-box { width: 56px; height: 56px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; border: 2px dashed var(--line); background: var(--bg); }
+.logo-box.drop { border-color: var(--accent); }
+.logo-box svg, .logo-box img { width: 100%; height: 100%; display: block; }
+.logo-tools { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: .74rem; color: var(--ink-2); }
+.logo-tools .btn { font-size: .74rem; padding: 3px 9px; width: fit-content; }
+.kids { display: flex; flex-wrap: wrap; gap: 6px; }
+.kid { font-size: .78rem; border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; background: transparent; color: var(--ink); cursor: pointer; text-align: left; }
+.kid:hover { border-color: var(--ink); }
+.foot { font-size: .76rem; color: var(--ink-2); max-width: 100ch; }
+.foot ul { margin: 4px 0 0; padding-left: 1.2em; }
+@media (prefers-reduced-motion: no-preference) { .node { transition: opacity .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="asof">2026-11-24 기준 · 초안 분류</div>
+    <h1>매체 지도</h1>
+    <p class="lede">가운데에서 영역, 구역, 매체 순으로 가지가 뻗습니다. 가지를 눌러 펼치고, 끌어서 이동하고, 휠이나 +/−로 확대하세요. 매체를 누르면 확인한 규격이 오른쪽에 나옵니다.</p>
+  </header>
+  <div class="bar">
+    <div class="seg" id="filters" role="group" aria-label="수집 상태 필터"></div>
+    <div class="seg">
+      <button class="btn" id="expAll" type="button">모두 펼치기</button>
+      <button class="btn" id="colAll" type="button">구역만 보기</button>
+    </div>
+    <input id="q" type="search" placeholder="매체 검색 (예: CGV, 유튜브)" aria-label="매체 검색">
+  </div>
+  <div class="layout">
+    <div class="stage">
+      <svg id="svg" role="img" aria-label="매체 마인드맵"><g id="vp"><g id="edges"></g><g id="nodes"></g></g></svg>
+      <div class="zoom">
+        <button class="btn" id="zin" type="button" aria-label="확대">+</button>
+        <button class="btn" id="zout" type="button" aria-label="축소">−</button>
+        <button class="btn" id="zfit" type="button" aria-label="화면에 맞추기">◎</button>
+      </div>
+      <div class="hint">끌어서 이동 · 휠로 확대</div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+  <footer class="foot">
+    <strong>읽는 법</strong>
+    <ul>
+      <li>고리 모양이 수집 상태입니다. 굵은 실선은 검증됨, 실선은 부분 확인, 점선은 소스 후보, 희미한 점선은 미착수입니다.</li>
+      <li>매체 안의 원은 임시 배지입니다(브랜드 색을 근사한 색과 이니셜). 실제 로고는 매체를 선택한 뒤 오른쪽에서 올리면 이 브라우저에 저장됩니다.</li>
+      <li>분류와 상태는 2026-11-24까지 읽은 자료만 반영한 초안입니다. 칸이 희미하다고 규격이 없는 것이 아니라 아직 보지 않았다는 뜻입니다.</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+var ZONES = [
+ {
+  "id": "ooh",
+  "cls": "z-ooh",
+  "name": "옥외 · OOH",
+  "blurb": "길 위와 건물 안에서 만나는 매체. 인쇄와 영상이 섞여 있고 규격이 매체마다 다릅니다. 칸 이름은 내 Drive·메일·렙사 자료에서 확인된 매체입니다.",
+  "regions": [
+   {
+    "name": "대형 LED · 미디어파사드",
+    "form": "영상 루프, 비정형 해상도",
+    "route": "매체사 소개서·제작가이드 PDF",
+    "items": [
+     {
+      "n": "룩스 LUUX (광화문)",
+      "s": "part",
+      "note": "동아일보 소개서와 제작가이드(단일 매체사 자료): 풀스크린 4,728x5,760px, 블랙바 제외 면 4,728x5,500px, MP4(H.265, VBR) 음향 없음, 50~100Mbps, 30~60fps, 20·30초. 곡면·분할 도면 수치는 이미지형이라 확인 필요. 용량·심의·마감은 문서에 없음."
+     },
+     {
+      "n": "루미미디어 (광화문)",
+      "s": "part",
+      "note": "스푼 소개서: 22.2m x 30.5m, 2,192x2,976px, 20구좌, 06~24시. 20초 일 100회, 30초 일 70회. 파일 형식·심의는 문서에 없고 제작가이드 페이지는 이미지형."
+     },
+     {
+      "n": "케이사인 LED (도산대로)",
+      "s": "src",
+      "note": "인컴이즈 소개서: 13.138m x 17m, 1면, 20·30초, 일 100회, 06~24시. 해상도·소재 조건은 문서에 없음."
+     },
+     {
+      "n": "THE KORYO LED",
+      "s": "src",
+      "note": "인컴이즈 PPTX를 읽었으나 규격 확인은 부족. 원문 확인 필요."
+     },
+     {
+      "n": "어메이징크리 전광판 12개 매체",
+      "s": "part",
+      "note": "내부 제작가이드: 12개 매체의 규격(m)과 해상도(px)가 표로 있고 모두 mp4. 가로형은 벤츠빌딩·백영빌딩·리베라호텔 3곳, 나머지는 세로형. 코덱·용량·길이·마감은 문서에 없음."
+     },
+     {
+      "n": "코엑스 SM타운 외벽",
+      "s": "src",
+      "note": "삼성전자 사례 페이지: 80.8m x 20.1m, 7,840x1,952px. 매체사 원문 아님."
+     },
+     {
+      "n": "성수 외벽 · DOOH",
+      "s": "src",
+      "note": "올이즈웰(성수역 DOOH PKG)·인컴이즈 자료가 있으나 PDF가 이미지형이라 텍스트 미추출."
+     },
+     {
+      "n": "로드블럭 여의12",
+      "s": "src",
+      "note": "올이즈웰 소개서 31MB(제작가이드 변경판). 첨부가 커서 받지 못함."
+     },
+     {
+      "n": "강남·명동·홍대 대형 LED",
+      "s": "none",
+      "note": "위치별 해상도와 슬롯 초수를 수집해야 합니다."
+     },
+     {
+      "n": "빌딩 미디어파사드",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "지하철 · 철도",
+    "form": "인쇄 + 디지털",
+    "route": "운영사·렙사 소개서",
+    "items": [
+     {
+      "n": "지하철 디지털종합안내도 (1~4호선)",
+      "s": "part",
+      "note": "올이즈웰 PDF(단일 소스): Big Screen 1,920x1,080 / Mobile Poster 1,080x1,920 / Rolling Banner 1,920x540, MP4·JPG, 15초, 게첨 5영업일 전 마감, 서울교통공사 심의 필수. 운영사는 2026-11-26까지 연장 후 재입찰 예정."
+     },
+     {
+      "n": "N-MEDIA 지하철 디지털 포스터",
+      "s": "src",
+      "note": "신촌·사당·역삼·잠실·건대입구 49인치 144기. 소개서가 이미지형이라 규격 미추출."
+     },
+     {
+      "n": "지하철 12578 · N.square · 5호선 광화문역",
+      "s": "src",
+      "note": "나스미디어 소개서 3종을 받았으나 대부분 이미지형."
+     },
+     {
+      "n": "지하철 포스터·스크린도어·역사 보드",
+      "s": "none",
+      "note": "운영사별 심의 기준을 함께 봐야 합니다."
+     },
+     {
+      "n": "울산역 KTX 영상",
+      "s": "part",
+      "note": "렙사 전달: 20초 이하 불가, 30초, 15구좌, 일 204회. 매체사 원문 미대조."
+     }
+    ]
+   },
+   {
+    "name": "버스 · 택시 · 정류장",
+    "form": "인쇄(재단선), 일부 영상",
+    "route": "렙사·매체사 판매안 PDF",
+    "items": [
+     {
+      "n": "서울버스 (외부 광고)",
+      "s": "part",
+      "note": "Drive 소개서: 차량별 면 규격, 심의, 금지 업종 표를 읽었습니다."
+     },
+     {
+      "n": "버스쉘터 (스페이스애드)",
+      "s": "part",
+      "note": "판매안에서 소재 규격·심의·납품 조건을 추출. 쉘터 수가 문서 안에서 2,121개와 2,232개로 달라 원문 확인 필요."
+     },
+     {
+      "n": "버스쉘터 · 전광판 (카카오모빌리티)",
+      "s": "part",
+      "note": "소개서 Ver 6.1: 전광판 JPG/MP4 100MB, 편의점 60MB, 버스쉘터 JPG/PNG 200MB. 디지털은 라이브 4영업일 전, 버스쉘터는 2주 전 전달. 노출 기간 중 소재 변경 불가."
+     },
+     {
+      "n": "서울버스TV · 쉘터TV",
+      "s": "src",
+      "note": "메가박스·스페이스애드 제안서가 이미지 위주라 규격 미추출. 큰 PPTX(240MB)는 받지 못함."
+     },
+     {
+      "n": "LG U+ 디지털 쉘터 (강남대로·중앙차로)",
+      "s": "src",
+      "note": "위치·수량·기간만 확인. 해상도·마감은 문서에 없음."
+     },
+     {
+      "n": "울산 시내버스 내부 영상",
+      "s": "part",
+      "note": "렙사 전달: 15초 불가, 30초, 최소 50대~최대 350대."
+     },
+     {
+      "n": "택시 (카카오T DOOH)",
+      "s": "src",
+      "note": "언론 보도 수준. 소재 규격 미확인."
+     }
+    ]
+   },
+   {
+    "name": "공항 · 터미널",
+    "form": "디지털 + 인쇄",
+    "route": "공항·운영사 소개서",
+    "items": [
+     {
+      "n": "인천공항 T1·T2",
+      "s": "part",
+      "note": "Drive 소개서에서 매체별 규격·해상도·구좌 표를 읽었습니다. 올이즈웰 제안서에는 T2 미디어 아트는 공항공사 심의 후 진행 여부 확인이 가능하다는 안내가 있습니다."
+     },
+     {
+      "n": "김포·제주공항",
+      "s": "src",
+      "note": "올이즈웰 소개서 78MB·33MB. 첨부가 커서 받지 못함."
+     },
+     {
+      "n": "고속·시외버스 터미널",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "생활 동선 · 실내",
+    "form": "세로형 영상, 짧은 루프",
+    "route": "매체사 소개서·제작가이드",
+    "items": [
+     {
+      "n": "타운보드 (엘리베이터·디지털게시판)",
+      "s": "part",
+      "note": "소개서와 제작가이드 PDF가 서로 일치: 25인치 분할 1080x1920, 전면 1080x2480, 50/55인치 1080x2560, MP4 H.264 4096kbps, 2.5GB 미만, 15·30·45·60초. 부적합 광고 16개 항목. 카카오모빌리티 소개서에는 다른 값(1080x1920, 1GB)이 있어 원문 기준 확인 필요."
+     },
+     {
+      "n": "엘리베이터TV (포커스미디어)",
+      "s": "part",
+      "note": "제안서: 15·20초, 편성 마감 D-2, 25인치 세로형 등. 표가 깨져 일부 값 불명확. 파일 규격은 제안서에 없음."
+     },
+     {
+      "n": "엘리베이터TV (LG U+ 심플리)",
+      "s": "src",
+      "note": "25인치 15초만 확인."
+     },
+     {
+      "n": "아파트미디어 (스페이스애드)",
+      "s": "part",
+      "note": "판매안에서 소재 규격·심의·납품 조건을 추출."
+     },
+     {
+      "n": "더스퀘어+강남 (강남역 지하)",
+      "s": "part",
+      "note": "디지털 15초(60/120 PLAN 일 60·120회 이상). 인쇄는 AI, 300dpi(최하 200dpi), CMYK, 폰트 아웃라인, 준불연 소재. 디지털 픽셀은 도면 의존이라 매핑 불확실."
+     },
+     {
+      "n": "현대백화점 On·Off",
+      "s": "part",
+      "note": "오프라인(CANVAST 등)·온라인 매체별 크기·15·20·30초. 게첨 마감: 심의 소재 7영업일 전, 일반 소재 5영업일 전, 소재 변경은 주 1회."
+     },
+     {
+      "n": "편의점 (GS25 등)",
+      "s": "part",
+      "note": "카카오모빌리티 소개서에 파일 용량 60MB가 있습니다. 해상도 미확인."
+     },
+     {
+      "n": "프라임오피스·공유오피스",
+      "s": "src",
+      "note": "스페이스애드 판매안 PDF가 있으나 이번에 읽지 못함."
+     },
+     {
+      "n": "스푼 잠실 지하광장",
+      "s": "src",
+      "note": "이미지형이라 입지 설명만 추출."
+     },
+     {
+      "n": "GS넷비전 미디어믿(주거지 엘리베이터)",
+      "s": "none",
+      "note": "매체사 풀 목록에만 있음."
+     }
+    ]
+   },
+   {
+    "name": "극장",
+    "form": "영상물, 음향 포함",
+    "route": "매체사 PDF·영상물등급위원회",
+    "items": [
+     {
+      "n": "CGV 스크린",
+      "s": "ok",
+      "note": "이메일 pptx와 CGV 공식 PDF(2026-03-11)가 길이·코덱·오디오·D-3 입고·심의 접수 일치. 용량 30초 기준 300MB는 공식 PDF 값."
+     },
+     {
+      "n": "CGV 메트로라이브",
+      "s": "ok",
+      "note": "1,920x540이 공식 PDF 97쪽과 일치. Level 4.1·5Mbps·5영업일은 공식 쪽 별도 확인."
+     },
+     {
+      "n": "롯데시네마",
+      "s": "part",
+      "note": "울산 2개소 16개 상영관, 지역은 일반(R)·A·Great 존만(렙사 전달). 제작 규격은 제안서에 일부만."
+     },
+     {
+      "n": "메가박스 (MegaM)",
+      "s": "part",
+      "note": "지역 타겟팅 상품은 티켓타임 전 송출(렙사 전달). 제작 규격은 미추출."
+     }
+    ]
+   },
+   {
+    "name": "스포츠 · 공연장",
+    "form": "경기장 사이니지",
+    "route": "경기장 소개서",
+    "items": [
+     {
+      "n": "잠실야구장",
+      "s": "part",
+      "note": "Drive 소개서에서 매체별 규격과 제작 가이드를 읽었습니다."
+     },
+     {
+      "n": "KBO 구장 (스페이스애드)",
+      "s": "src",
+      "note": "판매안 PDF가 있으나 읽지 못함."
+     }
+    ]
+   },
+   {
+    "name": "프로그래매틱 DOOH",
+    "form": "다규격, 동적 소재",
+    "route": "플랫폼 문서",
+    "items": [
+     {
+      "n": "플랫폼형 DOOH 구매 채널",
+      "s": "none",
+      "note": "대상 플랫폼부터 정해야 합니다. 메조 2027 트렌드 리포트가 셀프서브 DOOH 확대를 다룹니다."
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "dig",
+  "cls": "z-dig",
+  "name": "디지털",
+  "blurb": "공식 가이드 URL이 있고 자주 바뀌는 영역. 링크를 등록해 필요할 때 변경을 확인합니다.",
+  "regions": [
+   {
+    "name": "검색 · 포털",
+    "form": "텍스트 + 이미지 + 영상",
+    "route": "공식 도움말 URL",
+    "items": [
+     {
+      "n": "네이버 (GFA·검색광고)",
+      "s": "src",
+      "note": "11월부터 광고주센터가 네이버애즈(N Ads)로 개편, 쇼핑 프로모션이 쇼핑 고객 확장으로 변경. 소재 규격 공식 URL은 미확정."
+     },
+     {
+      "n": "카카오 비즈보드(톡보드)",
+      "s": "ok",
+      "note": "톡보드 가이드와 외부DSP 문서가 모두 960x300px, 300KB 이하로 일치. 카피 최소 240px·최대 526px. 구판 1029x258은 쓰지 않음."
+     },
+     {
+      "n": "카카오 모먼트 동영상",
+      "s": "part",
+      "note": "공식 가이드: 16:9 1280x720 이상, 9:16 720x1280 이상, 1GB 이하, 3초 이상, AVI·FLV·MP4 권장."
+     },
+     {
+      "n": "카카오 네이티브·채널 메시지",
+      "s": "src",
+      "note": "내부 제작가이드(알페신 v5)에 네이티브 1200x600·500x500·800x1000·720x1280, JPG 500KB 이하가 있습니다. 공식 본문 대조는 미완."
+     },
+     {
+      "n": "구글 검색 · 디스플레이",
+      "s": "part",
+      "note": "PMax 한국어 도움말: 가로 1.91:1 1200x628 권장(최소 600x314), 정사각 1200x1200, 5,120KB 이하, jpg/png."
+     }
+    ]
+   },
+   {
+    "name": "영상 플랫폼",
+    "form": "세로·가로 영상",
+    "route": "공식 도움말 URL",
+    "items": [
+     {
+      "n": "유튜브 (범퍼·인스트림·쇼츠)",
+      "s": "part",
+      "note": "한국어 도움말: 건너뛸 수 있는 광고 5초 후 건너뛰기, 범퍼 최대 6초, 15·20초형(TV는 30초). 컴패니언 배너 300x60 150KB 미만(내부 제작가이드와 일치)."
+     },
+     {
+      "n": "틱톡 인피드",
+      "s": "ok",
+      "note": "공식 한국어 도움말(mp4·mov, 9:16 540x960 이상, 500MB 이하, 516kbps 이상)과 내부 제작가이드 v5가 일치."
+     },
+     {
+      "n": "네이버 클립",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "SNS",
+    "form": "피드·스토리·릴스",
+    "route": "공식 광고 가이드",
+    "items": [
+     {
+      "n": "인스타그램 피드 영상",
+      "s": "ok",
+      "note": "Meta 공식 광고 가이드(Facebook 피드 영상 사양): 4:5, 1440x1800, 4GB, H.264. 내부 가이드 2건(정관장·알페신)과 일치. 인스타그램 전용 페이지의 길이는 미확인(내부 최대 60분, 공식 Facebook 피드는 241분)."
+     },
+     {
+      "n": "인스타그램 스토리·릴스",
+      "s": "part",
+      "note": "내부 가이드: 9:16 1440x2560, 세이프존 상 14%·하 35%·좌우 6%. 웹 2차 자료와 일치. 공식 노출 위치 전환 페이지는 자동 확인 못함."
+     },
+     {
+      "n": "스레드",
+      "s": "part",
+      "note": "Meta 개발자 문서 스니펫(이미지 1:1~4:5, 영상 1.91:1~9:16)과 내부 가이드(1080x1920, 피드에서 4:5로 잘림)."
+     },
+     {
+      "n": "링크드인",
+      "s": "part",
+      "note": "공식 광고 가이드: 단일 이미지 1200x627 PNG/JPG 5MB 미만, 영상 MP4 500MB 미만."
+     },
+     {
+      "n": "X",
+      "s": "src",
+      "note": "help.x.com이 봇 차단(403)이라 읽지 못함. 직접 내려받은 파일이 필요."
+     },
+     {
+      "n": "스냅 · 핀터레스트",
+      "s": "src",
+      "note": "스냅은 JS 렌더링 본문이 비어 있음. 핀터레스트는 접속만 확인."
+     }
+    ]
+   },
+   {
+    "name": "앱 · 플랫폼",
+    "form": "배너, 네이티브",
+    "route": "광고센터·내부 가이드",
+    "items": [
+     {
+      "n": "토스",
+      "s": "part",
+      "note": "내부 제작가이드: 1200x628, 1200x1200(최소 1000x1000), 1080x1920, 10MB 이하, 투명 배경 불가, 로고·브랜드명 필수. 공식 본문 대조는 미완."
+     },
+     {
+      "n": "당근",
+      "s": "src",
+      "note": "11월 광고 Open API 베타 출시, 연말 카탈로그 프로모션(렙사 리포트). 규격은 미확인."
+     },
+     {
+      "n": "ChatGPT 광고",
+      "s": "part",
+      "note": "내부 가이드: 1:1 최대 1200x1200 PNG/JPG, CTA는 '자세히 알아보기'만. OpenAI 문서 인용 값이며 11월 신규 매체."
+     },
+     {
+      "n": "카카오T",
+      "s": "src",
+      "note": "옥외 DOOH는 별도. 앱 광고 규격 미확인."
+     }
+    ]
+   },
+   {
+    "name": "커머스 · 리테일미디어",
+    "form": "상품 연동, 배너",
+    "route": "광고주 콘솔·소개서",
+    "items": [
+     {
+      "n": "올리브영 (협력광고·매체소개서)",
+      "s": "part",
+      "note": "Drive의 올리브영 매체소개서를 읽었습니다. 대행사 글: 뷰티는 단일 이미지만, 1:1 1080x1080 권장(2026-02)."
+     },
+     {
+      "n": "쿠팡 · 무신사 · 오늘의집 등",
+      "s": "none",
+      "note": "공식 규격을 찾지 못함. 대행사 글 수준."
+     },
+     {
+      "n": "신세계포인트 · 하나페이",
+      "s": "src",
+      "note": "11월 신규 상품(타겟 문자·메인 배너, 통합 패키지). 규격 미확인."
+     }
+    ]
+   },
+   {
+    "name": "OTT · CTV",
+    "form": "15·30초 영상",
+    "route": "플랫폼 광고 가이드",
+    "items": [
+     {
+      "n": "티빙",
+      "s": "part",
+      "note": "TVING Ads Guide(공식): 인스트림 1920x1080, 논스킵 15·30초, 스키퍼블 6~120초, 300MB 이하, 24fps 이상. 이미지 1200x364·2208x364 200KB 이하. 생성형 AI 소재는 시작 3초 이상 표기."
+     },
+     {
+      "n": "넷플릭스 광고요금제",
+      "s": "src",
+      "note": "소재 규격은 파트너 도움말에 있으나 접근 실패(리디렉션 호스트 미허용). 11월 싱글 타이틀 테이크오버 신규."
+     },
+     {
+      "n": "디즈니+",
+      "s": "src",
+      "note": "11월 10일 광고형 국내 출시. 광고 판매·규격은 미공개 단계."
+     },
+     {
+      "n": "웨이브 · 쿠팡플레이",
+      "s": "none",
+      "note": "공식 광고 규격 문서를 찾지 못함."
+     },
+     {
+      "n": "스마트TV·FAST",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "오디오",
+    "form": "오디오 + 컴패니언 배너",
+    "route": "플랫폼 가이드",
+    "items": [
+     {
+      "n": "스포티파이",
+      "s": "src",
+      "note": "네덜란드 지역 페이지의 규격만 확인(한국 전용 아님)."
+     },
+     {
+      "n": "멜론",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "광고 네트워크 · DSP · 리워드",
+    "form": "네트워크 배너·영상",
+    "route": "렙사 소개서",
+    "items": [
+     {
+      "n": "나스미디어 nap DSP",
+      "s": "part",
+      "note": "2026.03 소개서: 배너 970x90·728x90·250x250·160x600·120x600·300x600, 모바일 320x50·320x100·300x250·320x480, Native 1200x627. 영상 15~240초. bizboard가 아직 1029x258로 표기돼 카카오 현행과 다름."
+     },
+     {
+      "n": "nap 리워드(오퍼월)",
+      "s": "src",
+      "note": "통합 광고상품 소개서를 받았으나 규격은 미추출(CPCV·CPI/CPE·CPSNS·CPA)."
+     },
+     {
+      "n": "타불라 (realize)",
+      "s": "src",
+      "note": "썸네일 최소 1000x600, 1MB 이하(스니펫). 도메인 소유 확인 필요."
+     },
+     {
+      "n": "메조미디어 마일스톤",
+      "s": "src",
+      "note": "디지털 매체 전체 분류 연간 자료. 원본 미확보."
+     }
+    ]
+   },
+   {
+    "name": "웹툰 · 콘텐츠",
+    "form": "디스플레이·영상·확장형",
+    "route": "광고 가이드 PDF",
+    "items": [
+     {
+      "n": "네이버 웹툰",
+      "s": "src",
+      "note": "광고 가이드 PDF(55쪽) 본문을 추출했으나 표 칸 대응이 불분명. 이미지형 600x600, 상단배너 600x260 등이 보임."
+     }
+    ]
+   },
+   {
+    "name": "렙사 리포트 (변경 신호)",
+    "form": "시장·상품 업데이트",
+    "route": "뉴스레터·보고서",
+    "items": [
+     {
+      "n": "나스리포트 (월간)",
+      "s": "part",
+      "note": "11월호 15쪽·12쪽 추출. 네이버·구글·메타·카카오·당근·틱톡 상품 변경 정리."
+     },
+     {
+      "n": "메조 Insight M (월간)",
+      "s": "src",
+      "note": "12월호: ChatGPT Sponsored Ads, 하나페이, 신세계포인트, 넷플릭스 STT 신규."
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "tv",
+  "cls": "z-tv",
+  "name": "TV · 방송",
+  "blurb": "방송 규격과 사전심의가 중심인 영역. 납품 형식과 심의 일정이 규격만큼 중요합니다.",
+  "regions": [
+   {
+    "name": "지상파 · 케이블 · 종편 CM",
+    "form": "15·20·30초 영상",
+    "route": "방송광고 판매 대행, 방송사 규격",
+    "items": [
+     {
+      "n": "KBS · MBC · SBS CM",
+      "s": "none",
+      "note": "알페신 TVC 큐시트·주간 리포트 메일은 있으나 납품 규격 가이드는 아닙니다."
+     },
+     {
+      "n": "케이블 · 종편 CM",
+      "s": "none",
+      "note": ""
+     },
+     {
+      "n": "헬로미디어",
+      "s": "src",
+      "note": "소개서는 이미지 위주라 매체 개요만 추출."
+     },
+     {
+      "n": "한국방송광고진흥공사",
+      "s": "none",
+      "note": "현행 판매·제작 규격을 찾지 못함."
+     }
+    ]
+   },
+   {
+    "name": "IPTV · 어드레서블 TV",
+    "form": "세트톱 영상",
+    "route": "IPTV 3사 통합 소개서",
+    "items": [
+     {
+      "n": "어드레서블 TV",
+      "s": "src",
+      "note": "나스미디어 소개서: IPTV 3사 통합 2,127만 가구, 100여 개 실시간 채널의 CM(프라임)·SB(베이직) 영역에서 가구별 맞춤 송출. 제작 규격은 미추출."
+     },
+     {
+      "n": "IPTV 광고 통합",
+      "s": "src",
+      "note": "소개서를 받았으나 이미지형."
+     },
+     {
+      "n": "VOD 광고",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "라디오",
+    "form": "오디오 CM",
+    "route": "방송사 납품 규격",
+    "items": [
+     {
+      "n": "라디오 CM",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "협찬 · PPL · 자막",
+    "form": "규정 중심",
+    "route": "방송사 규정",
+    "items": [
+     {
+      "n": "협찬·PPL·자막광고",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "방송광고 심의",
+    "form": "사전심의 절차",
+    "route": "심의기관 공지",
+    "items": [
+     {
+      "n": "방송광고 사전심의",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rule",
+  "cls": "z-rule",
+  "name": "횡단 규정 · 심의",
+  "blurb": "매체와 관계없이 소재 내용에 걸리는 규정. 매체 규격과 별도 레이어로 쌓습니다.",
+  "regions": [
+   {
+    "name": "법령 · 조례",
+    "form": "문서",
+    "route": "법제처, 지자체",
+    "items": [
+     {
+      "n": "옥외광고물법·지자체 조례",
+      "s": "none",
+      "note": ""
+     },
+     {
+      "n": "수원시·서울시 디지털 옥외광고 가이드라인",
+      "s": "src",
+      "note": "정부 사이트 접속 실패. 금지 내용·심사 대상 위주이고 수치는 적음."
+     }
+    ]
+   },
+   {
+    "name": "운영사 심의",
+    "form": "매체사별 기준",
+    "route": "운영사 공고",
+    "items": [
+     {
+      "n": "서울교통공사 광고 심의",
+      "s": "part",
+      "note": "지디아 자료: 소재 전달 5영업일 전, 서울교통공사 심의 필수, 외국어 자막 한글 병기, 게임·영화 등급 고지."
+     },
+     {
+      "n": "공항 광고 심의",
+      "s": "part",
+      "note": "올이즈웰 안내: T2 미디어 아트는 최종 소재를 공항공사가 심의."
+     },
+     {
+      "n": "CGV 자체 심의 대상 업종 (14종)",
+      "s": "ok",
+      "note": "의약품·의료기기·병원·주류·담배·사행성·대출·게임·식품·건기식·다이어트·화장품·영화·보험. 공식 PDF와 이메일 첨부가 일치."
+     }
+    ]
+   },
+   {
+    "name": "업종별 규제",
+    "form": "필수 표기·금지 표현",
+    "route": "협회·심의기구",
+    "items": [
+     {
+      "n": "의약품·의료기기·병원",
+      "s": "part",
+      "note": "CGV 가이드에 경고문구·심의번호 요건. 협회 원문 미확인."
+     },
+     {
+      "n": "주류",
+      "s": "part",
+      "note": "CGV: 무비패키지만 집행, 경고문구 흰 박스. 원문 법령 미확인."
+     },
+     {
+      "n": "금융·대부",
+      "s": "part",
+      "note": "CGV: 대부업 필수 표기 9종. 티빙: 대출모집인·금융투자 인가 서류 요건. 원문 미확인."
+     },
+     {
+      "n": "화장품·건강기능식품",
+      "s": "none",
+      "note": ""
+     }
+    ]
+   },
+   {
+    "name": "플랫폼 광고 정책",
+    "form": "금지·제한 콘텐츠",
+    "route": "플랫폼 정책 센터",
+    "items": [
+     {
+      "n": "구글·메타·X·틱톡 정책 변경 로그",
+      "s": "src",
+      "note": "변경 신호 URL을 레지스트리에 등록(Google·TikTok 접속 확인, X는 차단)."
+     },
+     {
+      "n": "티빙 광고 정책",
+      "s": "part",
+      "note": "검증되지 않은 표현, 제3자 권리 침해, 업종별 인가서 제출 요건."
+     }
+    ]
+   }
+  ]
+ }
+];
+var STATUS = {
+  ok:   { label: "검증됨", desc: "공식 문서와 다른 소스를 대조해 일치 확인" },
+  part: { label: "부분 확인", desc: "일부 수치 또는 공식 URL만 확인, 대조 미완" },
+  src:  { label: "소스 후보", desc: "메일·URL·문서가 있으나 아직 추출 전" },
+  none: { label: "미착수", desc: "아직 보지 않음" }
+};
+var ZVAR = { ooh: "var(--ooh)", dig: "var(--dig)", tv: "var(--tv)", rule: "var(--rule)" };
+var ZTINT = { ooh: "var(--ooh-tint)", dig: "var(--dig-tint)", tv: "var(--tv-tint)", rule: "var(--rule-tint)" };
+/* 임시 배지: 브랜드 색을 근사한 값(공식 로고가 아님) */
+var BRANDS = [
+  [/네이버/, "#03C75A", "#fff", "N"], [/카카오|톡보드|비즈보드/, "#FEE500", "#191919", "K"],
+  [/구글|PMax/, "#4285F4", "#fff", "G"], [/유튜브/, "#FF0000", "#fff", "▶"], [/틱톡/, "#111111", "#fff", "♪"],
+  [/인스타/, "#E1306C", "#fff", "IG"], [/메타|스레드/, "#0866FF", "#fff", "M"], [/링크드인/, "#0A66C2", "#fff", "in"],
+  [/^X$/, "#000000", "#fff", "X"], [/스냅/, "#FFFC00", "#111", "S"], [/토스/, "#0064FF", "#fff", "t"],
+  [/당근/, "#FF6F0F", "#fff", "당"], [/ChatGPT/, "#10A37F", "#fff", "AI"], [/올리브영/, "#8CC63F", "#fff", "OY"],
+  [/티빙/, "#FF153C", "#fff", "TV"], [/넷플릭스/, "#E50914", "#fff", "N"], [/디즈니/, "#113CCF", "#fff", "D+"],
+  [/CGV/, "#E71A0F", "#fff", "CGV"], [/롯데시네마/, "#ED1C24", "#fff", "LC"], [/메가박스/, "#352262", "#fff", "MB"],
+  [/포커스미디어/, "#0055FF", "#fff", "F"], [/나스미디어|nap/, "#00A0E9", "#fff", "NAS"], [/메조/, "#F26A21", "#fff", "MZ"],
+  [/스포티파이/, "#1DB954", "#fff", "Sp"], [/웹툰/, "#00D564", "#fff", "W"], [/LG U\+/, "#E6007E", "#fff", "LG"],
+  [/현대백화점/, "#00574B", "#fff", "H"], [/스페이스애드/, "#222", "#fff", "SA"], [/타운보드/, "#7B3FF2", "#fff", "TB"],
+  [/룩스|루미/, "#B38600", "#fff", "LX"], [/핀터레스트/, "#E60023", "#fff", "P"], [/인컴이즈|케이사인|KORYO/, "#2E3A59", "#fff", "IC"]
+];
+function slug(s) { return s.replace(/\s+/g, "").toLowerCase(); }
+function badgeFor(name, zid) {
+  for (var i = 0; i < BRANDS.length; i++) if (BRANDS[i][0].test(name)) return { bg: BRANDS[i][1], fg: BRANDS[i][2], t: BRANDS[i][3] };
+  var t = name.replace(/[^0-9A-Za-z가-힣]/g, "").slice(0, 2);
+  return { bg: ZTINT[zid], fg: ZVAR[zid], t: t };
+}
+var LOGOS = {};
+try { LOGOS = JSON.parse(localStorage.getItem("mm-logos-v1") || "{}"); } catch (e) { LOGOS = {}; }
+function saveLogos() { try { localStorage.setItem("mm-logos-v1", JSON.stringify(LOGOS)); } catch (e) {} }
+
+/* tree */
+var ROOT = { id: "root", kind: "root", name: "한국 광고 매체", open: true, children: [] };
+var ALL = [];
+ZONES.forEach(function (z) {
+  var zn = { id: z.id, kind: "zone", zid: z.id, name: z.name, blurb: z.blurb, open: true, children: [], parent: ROOT };
+  z.regions.forEach(function (r, ri) {
+    var rn = { id: z.id + "/" + ri, kind: "region", zid: z.id, name: r.name, form: r.form, route: r.route, open: false, children: [], parent: zn };
+    r.items.forEach(function (it) {
+      var ln = { id: z.id + "/" + ri + "/" + slug(it.n), kind: "leaf", zid: z.id, name: it.n, s: it.s, note: it.note, parent: rn };
+      rn.children.push(ln); ALL.push(ln);
+    });
+    zn.children.push(rn);
+  });
+  ROOT.children.push(zn);
+});
+var COUNTS = { all: ALL.length, ok: 0, part: 0, src: 0, none: 0 };
+ALL.forEach(function (l) { COUNTS[l.s]++; });
+
+var S = { filter: "all", q: "", sel: null, k: 1, x: 0, y: 0, auto: true };
+var NS = "http://www.w3.org/2000/svg";
+var svg = document.getElementById("svg"), vp = document.getElementById("vp"), gE = document.getElementById("edges"), gN = document.getElementById("nodes");
+var RAD = [0, 150, 300, 470];
+
+function el(tag, attrs, parent) {
+  var e = document.createElementNS(NS, tag);
+  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function pol(r, a) { var t = a * Math.PI / 180; return [r * Math.cos(t), r * Math.sin(t)]; }
+function weight(n) {
+  if (!n.children || !n.open) return 1;
+  var w = 0; n.children.forEach(function (c) { w += weight(c); }); return w;
+}
+function place(n, a0, a1, d) {
+  n.ang = (a0 + a1) / 2; n.r = RAD[d];
+  if (n.children && n.open) {
+    var tot = weight(n) - 0, sum = 0; n.children.forEach(function (c) { sum += weight(c); });
+    var a = a0; n.children.forEach(function (c) { var sp = (a1 - a0) * weight(c) / sum; place(c, a, a + sp, d + 1); a += sp; });
+  }
+}
+function layout() {
+  var gap = 6, start = -90, sum = 0;
+  ROOT.children.forEach(function (z) { sum += weight(z); });
+  var a = start; ROOT.r = 0; ROOT.ang = 0;
+  ROOT.children.forEach(function (z) {
+    var sp = 360 * weight(z) / sum;
+    place(z, a + gap / 2, a + sp - gap / 2, 1);
+    a += sp;
+  });
+}
+function visible(n, fn) { fn(n); if (n.children && n.open) n.children.forEach(function (c) { visible(c, fn); }); }
+
+function matches(n) {
+  var q = S.q.trim().toLowerCase();
+  var okS = S.filter === "all" || n.s === S.filter;
+  var okQ = !q || n.name.toLowerCase().indexOf(q) >= 0 || (n.parent && n.parent.name.toLowerCase().indexOf(q) >= 0);
+  return okS && okQ;
+}
+function subtreeHas(n) {
+  if (n.kind === "leaf") return matches(n);
+  return n.children.some(subtreeHas);
+}
+
+function draw() {
+  layout();
+  gE.textContent = ""; gN.textContent = "";
+  var filtering = S.filter !== "all" || S.q.trim() !== "";
+  var nodes = [];
+  visible(ROOT, function (n) { nodes.push(n); });
+  nodes.forEach(function (n) {
+    if (!n.parent) return;
+    var p = n.parent, rm = (p.r + n.r) / 2, p0 = pol(p.r, p.ang), c1 = pol(rm, p.ang), c2 = pol(rm, n.ang), p1 = pol(n.r, n.ang);
+    var e = el("path", { "class": "edge", d: "M" + p0 + " C" + c1 + " " + c2 + " " + p1, stroke: ZVAR[n.zid] }, gE);
+    if (filtering && !subtreeHas(n)) e.setAttribute("opacity", "0.08");
+  });
+  nodes.forEach(function (n) {
+    var pos = pol(n.r, n.ang), g = el("g", { "class": "node", tabindex: "0", role: "button", "aria-label": n.name, transform: "translate(" + pos[0] + "," + pos[1] + ")" }, gN);
+    g.style.setProperty("--zc", n.zid ? ZVAR[n.zid] : "var(--ink)");
+    g.dataset.id = n.id;
+    var rad, lblOff;
+    if (n.kind === "root") {
+      rad = 58; el("circle", { r: rad, fill: "var(--ink)" }, g);
+      var t1 = el("text", { "class": "zname", y: -6 }, g); t1.textContent = "한국 광고 매체";
+      var t2 = el("text", { "class": "zname", y: 12, style: "font-weight:500;font-size:11px" }, g); t2.textContent = ALL.length + "개 매체";
+      t1.style.fill = "var(--bg)"; t2.style.fill = "var(--bg)";
+    } else if (n.kind === "zone") {
+      rad = 42; el("circle", { r: rad, fill: ZVAR[n.zid] }, g);
+      var parts = n.name.split(" · "); parts.forEach(function (pt, i) {
+        var t = el("text", { "class": "zname", y: parts.length === 1 ? 4 : (i === 0 ? -4 : 12) }, g); t.textContent = pt;
+        if (n.zid === "rule" || document.documentElement.getAttribute("data-theme") === "dark") t.style.fill = "var(--bg)";
+      });
+    } else if (n.kind === "region") {
+      rad = 19; var cls = n.open ? ZTINT[n.zid] : "var(--surface)";
+      el("circle", { r: rad, fill: cls, stroke: ZVAR[n.zid], "stroke-width": 2.5 }, g);
+      var c = el("text", { "class": "cnt" }, g); c.textContent = n.children.length;
+      lblOff = rad + 8;
+    } else {
+      rad = 15; n.s = n.s;
+      g.classList.add("s-" + n.s);
+      var b = badgeFor(n.name, n.zid), clipId = "clip-" + slug(n.id).replace(/[^a-z0-9가-힣]/g, "_");
+      var halo = el("circle", { "class": "halo", r: rad + 8 }, g);
+      var bg = el("g", { "class": "badge" }, g);
+      if (LOGOS[n.id]) {
+        var cp = el("clipPath", { id: clipId }, bg); el("circle", { r: rad }, cp);
+        el("circle", { r: rad, fill: "#fff" }, bg);
+        var im = el("image", { href: LOGOS[n.id], x: -rad, y: -rad, width: rad * 2, height: rad * 2, "clip-path": "url(#" + clipId + ")", preserveAspectRatio: "xMidYMid meet" }, bg);
+      } else {
+        el("circle", { r: rad, fill: b.bg }, bg);
+        var it = el("text", { "class": "ini", fill: b.fg, style: "font-size:" + (b.t.length > 2 ? 8 : b.t.length > 1 ? 10 : 12) + "px" }, bg); it.textContent = b.t;
+      }
+      el("circle", { "class": "ring", r: rad + 3 }, g);
+      lblOff = rad + 9;
+    }
+    if (n.kind === "region" || n.kind === "leaf") {
+      var a = ((n.ang % 360) + 360) % 360, left = a > 90 && a < 270;
+      var lg = el("g", { transform: "rotate(" + n.ang + ")" }, g);
+      var tx = el("text", { "class": "lbl" + (n.kind === "region" ? " reg" : ""), x: left ? 0 : lblOff, y: 4, "text-anchor": left ? "end" : "start", transform: left ? "translate(" + (n.r === 0 ? 0 : 0) + ",0)" : "" }, lg);
+      if (left) { tx.setAttribute("transform", "rotate(180) translate(" + (-lblOff) + ",0)"); tx.setAttribute("x", 0); tx.setAttribute("text-anchor", "end"); tx.setAttribute("y", -0); tx.setAttribute("dy", "0.32em"); tx.removeAttribute("y"); }
+      else { tx.setAttribute("dy", "0.32em"); tx.removeAttribute("y"); }
+      tx.textContent = n.name;
+    }
+    if (n.kind === "leaf") {
+      if (filtering) { if (matches(n)) { if (S.q.trim()) g.classList.add("hit"); } else g.classList.add("dim"); }
+    } else if (filtering && !subtreeHas(n)) g.classList.add("dim");
+    if (S.sel === n.id) g.classList.add("sel");
+    g.addEventListener("click", function () { if (moved) return; onNode(n); });
+    g.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); onNode(n); } });
+  });
+  if (S.auto) fit(); else applyView();
+}
+function onNode(n) {
+  if (n.kind === "root") { collapseTo(1); select(n); return; }
+  if (n.children) { n.open = !n.open; }
+  select(n); draw();
+}
+function collapseTo(level) {
+  ROOT.children.forEach(function (z) { z.open = true; z.children.forEach(function (r) { r.open = level >= 2; }); });
+  fit(); draw();
+}
+function select(n) { S.sel = n.id; renderPanel(n); }
+
+/* panel */
+function find(id) { var f = null; var all = [ROOT]; visibleAll(ROOT, function (n) { if (n.id === id) f = n; }); return f; }
+function visibleAll(n, fn) { fn(n); if (n.children) n.children.forEach(function (c) { visibleAll(c, fn); }); }
+function crumb(n) { var a = []; while (n && n.kind !== "root") { a.unshift(n.name); n = n.parent; } return a.join("  ›  "); }
+function mk(tag, cls, txt, parent) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; if (parent) parent.appendChild(e); return e; }
+function badgeSVG(n, size) {
+  var s = el("svg", { viewBox: "-20 -20 40 40" }); var b = badgeFor(n.name, n.zid);
+  if (LOGOS[n.id]) { el("circle", { r: 20, fill: "#fff" }, s); el("image", { href: LOGOS[n.id], x: -20, y: -20, width: 40, height: 40, preserveAspectRatio: "xMidYMid meet" }, s); }
+  else { el("circle", { r: 20, fill: b.bg }, s); var t = el("text", { fill: b.fg, "text-anchor": "middle", "dominant-baseline": "central", style: "font-weight:800;font-size:" + (b.t.length > 2 ? 11 : b.t.length > 1 ? 14 : 17) + "px" }, s); t.textContent = b.t; }
+  return s;
+}
+function renderPanel(n) {
+  var p = document.getElementById("panel"); p.textContent = "";
+  if (!n) { mk("h2", null, "매체를 눌러 보세요", p); mk("p", "note", "가지 끝의 동그란 배지가 매체입니다. 누르면 확인한 규격과 출처 단계가 여기에 나옵니다.", p); return; }
+  if (n.kind !== "root") mk("div", "crumb", crumb(n), p);
+  mk("h2", null, n.kind === "root" ? "한국 광고 매체 전체" : n.name, p);
+  if (n.kind === "leaf") {
+    var pl = mk("span", "pill", null, p); var sw = mk("span", "sw " + n.s, null, pl); sw.style.borderColor = n.s === "none" ? "var(--muted)" : ZVAR[n.zid]; mk("span", null, STATUS[n.s].label + " · " + STATUS[n.s].desc, pl);
+    mk("p", "note", n.note || "아직 확인한 내용이 없습니다. 이 매체의 소개서나 가이드가 있으면 추출해서 채웁니다.", p);
+    var lr = mk("div", "logo-row", null, p), box = mk("div", "logo-box", null, lr); box.appendChild(badgeSVG(n));
+    var tools = mk("div", "logo-tools", null, lr);
+    mk("span", null, LOGOS[n.id] ? "올려 둔 로고를 쓰고 있습니다." : "임시 배지입니다. 로고 이미지를 끌어다 놓거나 선택하세요.", tools);
+    var inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.id = "logoFile"; inp.hidden = true; tools.appendChild(inp);
+    var bt = mk("button", "btn", "로고 올리기", tools); bt.type = "button"; bt.addEventListener("click", function () { inp.click(); });
+    if (LOGOS[n.id]) { var rm = mk("button", "btn", "로고 지우기", tools); rm.type = "button"; rm.addEventListener("click", function () { delete LOGOS[n.id]; saveLogos(); draw(); renderPanel(n); }); }
+    inp.addEventListener("change", function () { if (inp.files[0]) loadLogo(n, inp.files[0]); });
+    box.addEventListener("dragover", function (e) { e.preventDefault(); box.classList.add("drop"); });
+    box.addEventListener("dragleave", function () { box.classList.remove("drop"); });
+    box.addEventListener("drop", function (e) { e.preventDefault(); box.classList.remove("drop"); if (e.dataTransfer.files[0]) loadLogo(n, e.dataTransfer.files[0]); });
+  } else if (n.kind === "region") {
+    mk("p", "kv", null, p).innerHTML = "";
+    var k1 = mk("p", "kv", null, p); mk("b", null, "소재 형태", k1); k1.appendChild(document.createTextNode(n.form));
+    var k2 = mk("p", "kv", null, p); mk("b", null, "가이드 경로", k2); k2.appendChild(document.createTextNode(n.route));
+    kids(n, p);
+  } else {
+    if (n.blurb) mk("p", "note", n.blurb, p);
+    if (n.kind === "zone") kids(n, p);
+    else mk("p", "note", "가지를 눌러 펼치세요. 전체 " + ALL.length + "개 매체: 검증됨 " + COUNTS.ok + " · 부분 확인 " + COUNTS.part + " · 소스 후보 " + COUNTS.src + " · 미착수 " + COUNTS.none + ".", p);
+  }
+}
+function kids(n, p) {
+  var wrap = mk("div", "kids", null, p);
+  n.children.forEach(function (c) {
+    var b = mk("button", "kid", c.name + (c.kind === "region" ? " (" + c.children.length + ")" : ""), wrap); b.type = "button";
+    b.addEventListener("click", function () { var a = c; while (a.parent) { a = a.parent; if (a.kind !== "root") a.open = true; } if (c.kind === "region") c.open = true; select(c); draw(); focusNode(c); });
+  });
+}
+function loadLogo(n, file) {
+  if (!file.type || file.type.indexOf("image/") !== 0) return;
+  var fr = new FileReader();
+  fr.onload = function () {
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement("canvas"), sz = 128; c.width = c.height = sz; var cx = c.getContext("2d");
+      var sc = Math.min(sz / img.width, sz / img.height), w = img.width * sc, h = img.height * sc;
+      cx.drawImage(img, (sz - w) / 2, (sz - h) / 2, w, h);
+      LOGOS[n.id] = c.toDataURL("image/png"); saveLogos(); draw(); renderPanel(n);
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+/* view */
+function applyView() { vp.setAttribute("transform", "translate(" + S.x + "," + S.y + ") scale(" + S.k + ")"); }
+function fit() {
+  var r = svg.getBoundingClientRect(), mx = 0, leaf = false;
+  visible(ROOT, function (n) { if (n.r > mx) mx = n.r; if (n.kind === "leaf") leaf = true; });
+  var ext = mx + (leaf ? 250 : 190);
+  S.k = Math.min(r.width, r.height) / (2 * ext); S.x = r.width / 2; S.y = r.height / 2; applyView();
+}
+function focusNode(n) { S.auto = false;
+  var pos = pol(n.r, n.ang), r = svg.getBoundingClientRect(); if (S.k < 0.9) S.k = 0.9;
+  S.x = r.width / 2 - pos[0] * S.k; S.y = r.height / 2 - pos[1] * S.k; applyView();
+}
+function zoomAt(f, cx, cy) {
+  var nk = Math.max(0.25, Math.min(3, S.k * f)); f = nk / S.k;
+  S.x = cx - (cx - S.x) * f; S.y = cy - (cy - S.y) * f; S.k = nk; applyView();
+}
+var moved = false, drag = null;
+svg.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, y: e.clientY, sx: S.x, sy: S.y, id: e.pointerId }; moved = false; });
+svg.addEventListener("pointermove", function (e) {
+  if (!drag || drag.id !== e.pointerId) return;
+  var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!moved && Math.abs(dx) + Math.abs(dy) > 5) { moved = true; svg.classList.add("drag"); try { svg.setPointerCapture(e.pointerId); } catch (x) {} }
+  if (moved) { S.auto = false; S.x = drag.sx + dx; S.y = drag.sy + dy; applyView(); }
+});
+function endDrag() { drag = null; svg.classList.remove("drag"); setTimeout(function () { moved = false; }, 0); }
+svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
+svg.addEventListener("wheel", function (e) { e.preventDefault(); S.auto = false; var r = svg.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+document.getElementById("zin").onclick = function () { S.auto = false; var r = svg.getBoundingClientRect(); zoomAt(1.25, r.width / 2, r.height / 2); };
+document.getElementById("zout").onclick = function () { S.auto = false; var r = svg.getBoundingClientRect(); zoomAt(0.8, r.width / 2, r.height / 2); };
+document.getElementById("zfit").onclick = function () { S.auto = true; fit(); };
+document.getElementById("expAll").onclick = function () { ROOT.children.forEach(function (z) { z.open = true; z.children.forEach(function (r) { r.open = true; }); }); fit(); draw(); };
+document.getElementById("colAll").onclick = function () { collapseTo(1); };
+
+/* filters + search */
+function renderFilters() {
+  var f = document.getElementById("filters"); f.textContent = "";
+  [["all", "전체"], ["ok", "검증됨"], ["part", "부분 확인"], ["src", "소스 후보"], ["none", "미착수"]].forEach(function (d) {
+    var b = mk("button", "btn", null, f); b.type = "button"; b.setAttribute("aria-pressed", S.filter === d[0] ? "true" : "false"); b.title = d[0] === "all" ? "모든 매체" : STATUS[d[0]].desc;
+    if (d[0] !== "all") mk("span", "sw " + d[0], null, b); mk("span", null, d[1], b); mk("span", "n", String(COUNTS[d[0]]), b);
+    b.addEventListener("click", function () { S.filter = d[0]; if (S.filter !== "all") expandMatches(); renderFilters(); draw(); });
+  });
+}
+function expandMatches() {
+  ROOT.children.forEach(function (z) { z.children.forEach(function (r) { r.open = r.children.some(matches); }); });
+}
+document.getElementById("q").addEventListener("input", function (e) { S.q = e.target.value; if (S.q.trim()) expandMatches(); else if (S.filter === "all") ROOT.children.forEach(function (z) { z.children.forEach(function (r) { r.open = false; }); }); draw(); });
+
+renderFilters(); renderPanel(null); draw();
+window.addEventListener("resize", function () { if (S.auto) fit(); });
+</script>
