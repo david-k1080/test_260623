@@ -1,2 +1,5 @@
+data/mail/
+data/pdf/
+data/nasmedia/
 data/_render_tmp.txt
 __pycache__/
