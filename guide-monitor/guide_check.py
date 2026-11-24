@@ -9,13 +9,14 @@
 - 결과: data/state.json, data/snapshots/<guide_id>/<UTC날짜>.txt, reports/<UTC날짜>.md
 표준 라이브러리만 사용한다. 프록시와 CA는 HTTPS_PROXY, SSL_CERT_FILE 환경변수를 따른다.
 """
-import argparse, csv, hashlib, html, json, os, re, subprocess, sys, time, urllib.request, urllib.error, datetime
+import argparse, csv, hashlib, html, json, os, re, subprocess, sys, time, urllib.request, urllib.error, urllib.parse, datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UA = "Mozilla/5.0 (compatible; GuideRegistryMonitor/0.1)"
 
 
 def fetch(url, timeout=40):
+    url = urllib.parse.quote(url, safe=":/?&=%#@+,;~-._!$'()*[]")  # 한글 URL 인코딩
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "ko,en;q=0.8"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.status, r.geturl(), dict(r.headers), r.read()

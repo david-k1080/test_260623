@@ -1,0 +1,307 @@
+Performance Max campaigns specs and format requirements - Google Ads Help
+Skip to main content
+Google Ads Help
+Help Center
+Community
+Announcements
+Sign in
+Google Help
+Help Center
+Start advertising
+Campaigns
+Explore features
+Optimize performance
+Account & billing
+Fix issues
+Google Partners
+Community
+Google Ads
+Privacy Policy
+Terms of Service
+Submit feedback
+Send feedback on...
+This help content & information
+General Help Center experience
+Close
+Next
+Help Center
+Community
+Announcements
+Google Ads
+Start advertising
+Your guide to Google Ads
+8 steps to prepare your campaign for success
+Choose the right campaign type
+Determine your advertising goals
+How Google Ads can work for your industry
+Google Ads specs: ad formats, sizes, and best practices
+More advertising tools
+Google Ads basics
+Google Ads privacy
+Glossary
+Campaigns
+Performance Max
+AI Max for Search campaigns
+AI Max for Shopping campaigns
+Search campaigns
+Display campaigns
+Smart Campaigns
+App campaigns
+Shopping ads
+Video campaigns
+Hotel campaigns
+Demand Gen campaigns
+Call campaigns
+Things to do
+Events ticketing
+Explore features
+Ads, assets & landing pages
+Ad groups
+Keywords
+Bidding
+Targeting
+Measure results
+Bulk uploads & edits
+Campaign settings
+Optimize performance
+12 tips to advertising with Google Ads
+Google Ads Best Practices
+Optimization features
+Create effective Search ads
+Generative AI tools in Google Ads
+Improve with AI-powered Search
+Finding success with Smart Bidding
+Measure results
+Optimize performance with App Connect
+Google Ads training on Skillshop
+The Google Ads mobile app
+Account & billing
+Billing
+Account settings
+Account access
+Manager accounts
+Account security and safety
+Cancel or reactivate your account
+Working with client accounts
+Useful tools
+Fix issues
+Ad disapprovals and reviews
+Billing & payments
+Compromised account issues
+Policy issues
+Performance issues
+Account access issues
+Reporting issues
+Request implementation support for Google Ads and YouTube Reserve
+Google Ads API
+Google Partners
+Google Partners Program
+Google Ads specs
+Performance Max campaigns specs and format requirements
+Performance Max campaigns specs and format requirements
+Performance Max is a goal-based campaign type that allows performance advertisers to access all of their Google Ads inventory from a single campaign.
+The table below lists the requirements for each asset type that’s supported in Performance Max.
+The “Recommended” column lays out the number of assets required for Performance Max campaigns:
+Minimum
+: required to publish an asset group that does not have a Google Merchant Center feed attached.
+Maximum
+: the maximum number of asset allowed of a specific type.
+On this page
+Text asset specifications
+Image asset specifications
+Video asset specifications
+Merchant Center product feed
+Text asset specifications
+Type
+Guidelines
+Recommended
+Required
+Headlines
+30 characters max; include at least one with 15 characters or less
+11+ (minimum of 3, maximum of 15)
+✓
+Long headline
+90 characters maximum; try to make sure headlines are at least 30 characters long
+2+ (minimum of 1, maximum of 5)
+✓
+Descriptions
+90 characters maximum
+4+ (minimum of 2, maximum of 5)
+✓
+Business name
+25 characters maximum; exactly matches your domain name or legally verified business name (through Advertiser Verification); shouldn't contain extra symbols or promotional text.
+✓
+Call to action
+Automated by default, or select from a list
+1 call to action
+✓
+Final URL
+1 URL
+✓
+Display URL path
+15 characters maximum each
+2 (minimum of 1, maximum of 2)
+✕
+Note
+: In text assets, the length limits are the same across all languages. Each character in double-width languages like Korean, Japanese, or Chinese counts as 2 towards the limit instead of one.
+If Final URL expansion is on, Google may replace your Final URL with a more relevant landing page based on the user’s search query, and generate a dynamic headline, description, and additional assets to match your landing page content. Learn more
+About text customization
+.
+Image asset specifications
+Ratio
+Guidelines
+Recommended
+Required
+Horizontal 1.91:1
+1200 x 628 recommended; 600 x 314 minimum; 5120 KB max file size
+4+ (Add up to 20 images)
+✓
+*Square 1:1
+1200 x 1200 recommended; 300 x 300 minimum; 5120 KB max file size
+4+ (Add up to 20 images)
+✓
+Vertical 4:5
+960 x 1200 recommended; 480 x 600 minimum
+2+ (Add up to 20 images)
+✕
+Square logo 1:1
+1200 x 1200 recommended; 128 x 128 minimum; 5120 KB max file size
+1 (Add up to 5 logos)
+✓
+*Horizontal logo 4:1
+1200 x 300 recommended; 512 x 128 minimum; 5120 KB max file size
+1 (Add up to 5 logos)
+✕
+*Logos with a transparent background may be rendered on a white background when served in most ads. For this reason, we recommend you upload logos as a square image and to avoid a predominantly white logo on a transparent background. If your logo is flagged for issues like blurriness, re-upload a clear, high-quality version. Ensure the uploaded logo meets Google Ads specifications (for example, 1:1 ratio for square logos). Consider removing logos of other ratios if the primary one meets requirements and issues persist.
+Note
+: Upload images as .jpg or .png with a maximum size of 5MB. Some images are optional, but will help your campaign stand out with excellent ad strength.
+Video asset specifications
+Ratio
+Guidelines
+Recommended
+Required
+Horizontal 16:9
+10 seconds or more
+Add up to 15 videos. If you don't have one, Google will create videos automatically when possible.
+1 of each orientation (minimum of 1, maximum of 15)
+✕
+Square 1:1
+10 seconds or more
+Add up to 15 videos. If you don't have one, Google will create videos automatically when possible.
+1 of each orientation (minimum of 1, maximum of 15)
+✕
+Vertical 9:16
+10 seconds or more
+Add up to 15 videos. If you don't have one, Google will create videos automatically when possible.
+1 of each orientation (minimum of 1, maximum of 15
+✕
+Note
+: If you don’t add a video to your Performance Max asset group, then one or more videos may be auto-generated from the assets in your asset group. To achieve 'Excellent' Ad Strength and prevent the system from auto-generating AI videos, you must upload your own custom videos in all required formats (horizontal, square, and vertical). However, if you don’t have a video asset and don’t want to use the auto-generated videos, you can use the Google Ads video creation tool to create a video that you can use in your Performance Max campaign. Learn how to
+Create a video using Asset library
+.
+Merchant Center product feed
+If you're a retailer, you can attach a Merchant Center feed to your Performance Max campaign to serve
+Shopping Ads
+.
+You can find more information about the specifications and best practices to improve your product feeds in the
+Merchant Center Help Center
+:
+Product data specification
+Best practices for product images
+Enhancing Shopping Ads with annotations and badges
+Related links
+Google Ads specs: ad formats, sizes and best practices
+About Performance Max campaigns
+About text customization in Search campaigns
+Create a Video campaign
+About Shopping Ads
+Product data specification
+Best practices for product images
+Enhancing Shopping Ads with annotations and badges
+Need more help?
+Try these next steps:
+Post to the help community
+Get answers from community members
+Contact us
+Tell us more and we’ll help you get there
+false
+Achieve your advertising goals today!
+Attend our Performance Max Masterclass, a livestream workshop session bringing together industry and Google ads PMax experts.
+Register now
+©2026 Google
+Privacy Policy
+Terms of Service
+Google Ads Advertising Policies
+About the Help Center
+Send feedback on...
+This help content & information
+General Help Center experience
+Enable Dark Mode
+Language
+català‎
+dansk‎
+Deutsch‎
+eesti‎
+English (Australia)‎
+English (United Kingdom)‎
+español‎
+español (Latinoamérica)‎
+Filipino‎
+français‎
+hrvatski‎
+Indonesia‎
+italiano‎
+latviešu‎
+lietuvių‎
+magyar‎
+Melayu‎
+Nederlands‎
+norsk‎
+polski‎
+português‎
+português (Brasil)‎
+română‎
+slovenčina‎
+slovenščina‎
+suomi‎
+svenska‎
+Tiếng Việt‎
+Türkçe‎
+čeština‎
+Ελληνικά‎
+български‎
+русский‎
+српски‎
+українська‎
+‏
+עברית
+‏
+العربية
+हिन्दी‎
+ไทย‎
+中文（简体）‎
+中文（繁體）‎
+中文（香港）‎
+日本語‎
+한국어‎
+English‎
+Search
+Clear search
+Close search
+Google apps
+Main menu
+true
+Search Help Center
+true
+true
+true
+true
+true
+true
+73067
+false
+false
+true
+true
+false
+false

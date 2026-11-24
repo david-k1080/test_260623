@@ -1,0 +1,455 @@
+LinkedIn Ads Guide | Advertise on LinkedIn
+\r\n<li id=\"header-linkedin-marketing-labs\"><a href=\"https://training.marketing.linkedin.com/?trk=lms-tlt\" target=\"_blank\">LinkedIn Marketing Academy</a></li>\r\n<li id=\"header-help-center\"><a href=\"https://www.linkedin.com/help/lms?trk=lms-tlt&amp;src=re-pod&amp;veh=heatchat%7Cre-pod&amp;mcid=7307942968500396039\" target=\"_blank\">Help Center</a></li>\r\n<li id=\"header-blog\"><a href=\"https://www.linkedin.com/business/marketing/blog?trk=lms-tlt&amp;src=re-pod&amp;veh=heatchat%7Cre-pod&amp;mcid=7307942968500396039\" target=\"_blank\">Blog</a></li>\r\n</ul>\r\n"}}" id="header-linkedin-marketing-labs" class="cmp-text">
+LinkedIn Marketing Academy
+Help Center
+Blog
+| Advertise</p>\r\n"}}" id="text-779361fe12" class="cmp-text">
+| Advertise
+Advertising
+Advertising
+How to get started
+<a href=\"/content/lem/business/us/en/advertise/linkedin-pages.html\">Create a LinkedIn Page</a></p>\r\n"}}" id="header-ad-create" class="cmp-text">
+Create a LinkedIn Page
+First, build your company's brand and build trust with your community.</p>\r\n"}}" id="text-70937e874d" class="cmp-text">
+First, build your company's brand and build trust with your community.
+<a href=\"/content/lem/business/us/en/advertise/ads/campaign-manager.html\">Campaign Manager</a></p>\r\n"}}" id="header-ad-campaign" class="cmp-text">
+Campaign Manager
+Second, create your first ad campaign on LinkedIn's ad platform.</p>\r\n"}}" id="text-057d1e020f" class="cmp-text">
+Second, create your first ad campaign on LinkedIn's ad platform.
+<a href=\"https://www.linkedin.com/ads/create?trk=lms-36&amp;src=direct%2Fnone&amp;veh=direct%2Fnone\">Sign in to Campaign Manager</a></p>\r\n"}}" id="header-ad-sign-in" class="cmp-text">
+Sign in to Campaign Manager
+Ad formats
+<a href=\"/content/lem/business/us/en/advertise/ads/sponsored-content.html\">Sponsored Content</a></p>\r\n"}}" id="header-ad-sponsored-content" class="cmp-text">
+Sponsored Content
+Reach and engage a professional audience in the LinkedIn feed.</p>\r\n"}}" id="text-0fe02158b6" class="cmp-text">
+Reach and engage a professional audience in the LinkedIn feed.
+<a href=\"/content/lem/business/us/en/advertise/ads/sponsored-messaging.html\">Sponsored Messaging</a></p>\r\n"}}" id="header-ad-sponsored-messaging" class="cmp-text">
+Sponsored Messaging
+Engage your prospects where professional conversations happen.</p>\r\n"}}" id="text-6abc16d02d" class="cmp-text">
+Engage your prospects where professional conversations happen.
+<a href=\"/content/lem/business/us/en/advertise/ads/dynamic-ads.html\">Dynamic Ads</a></p>\r\n"}}" id="header-ad-dynamic" class="cmp-text">
+Dynamic Ads
+Engage prospects with ads automatically personalized to them.</p>\r\n"}}" id="text-8ca76fe786" class="cmp-text">
+Engage prospects with ads automatically personalized to them.
+<a href=\"/content/lem/business/us/en/advertise/ads/text-ads.html\">Text Ads</a></p>\r\n"}}" id="header-ad-text" class="cmp-text">
+Text Ads
+Self-service ad formats to create campaigns in minutes.</p>\r\n"}}" id="text-4fb2ba9587" class="cmp-text">
+Self-service ad formats to create campaigns in minutes.
+<a href=\"/content/lem/business/us/en/advertise/ads.html\">See all Ad formats</a></p>\r\n"}}" id="header-ad-formats" class="cmp-text">
+See all Ad formats
+Learn More
+<a href=\"/content/lem/business/us/en/advertise/ads/pricing.html\">Pricing</a></p>\r\n"}}" id="header-ad-pricing" class="cmp-text">
+Pricing
+Discover how much it costs to advertise on LinkedIn.</p>\r\n"}}" id="text-e62c2baac8" class="cmp-text">
+Discover how much it costs to advertise on LinkedIn.
+<a href=\"/content/lem/business/us/en/advertise/ads/audience.html\">Targeting</a></p>\r\n"}}" id="header-ad-targeting" class="cmp-text">
+Targeting
+Reach the people who matter most.</p>\r\n"}}" id="text-5c42151577" class="cmp-text">
+Reach the people who matter most.
+<a href=\"/content/lem/business/us/en/advertise/ads/generate-leads.html\">Lead Generation</a></p>\r\n"}}" id="header-ad-lead-gen" class="cmp-text">
+Lead Generation
+Qualified leads come from a quality audience on LinkedIn.</p>\r\n"}}" id="text-d9c10fb46e" class="cmp-text">
+Qualified leads come from a quality audience on LinkedIn.
+<a href=\"/content/lem/business/us/en/advertise/ads/boosting.html\">Boosting</a></p>\r\n"}}" id="header-ad-boosting" class="cmp-text">
+Boosting
+An easy way to reach new audiences by amplifying your best content.</p>\r\n"}}" id="text-9292af6e66" class="cmp-text">
+An easy way to reach new audiences by amplifying your best content.
+<a href=\"/content/lem/business/us/en/advertise/partners.html\" target=\"_self\">Partners</a></p>\r\n"}}" id="header-ad-conversion" class="cmp-text">
+Partners
+Trusted integrations and services to power marketing.</p>\r\n"}}" id="text-af73cbffbd" class="cmp-text">
+Trusted integrations and services to power marketing.
+<a href=\"/content/lem/business/us/en/advertise/ads/best-practices.html\">Ad Tips &amp; Best Practices</a></p>\r\n"}}" id="header-ad-tips" class="cmp-text">
+Ad Tips & Best Practices
+Compare Ads
+Compare Ads
+Resources
+Resources
+Getting Started
+<a href=\"/content/lem/business/us/en/advertise/ads/getting-started.html\">How to Create a Campaign</a></p>\r\n"}}" id="header-resources-create-campaign" class="cmp-text">
+How to Create a Campaign
+<a href=\"/content/lem/business/us/en/advertise/ads/ads-guide.html\">Ad Specs</a></p>\r\n"}}" id="header-resources-ad-specs" class="cmp-text">
+Ad Specs
+Learn
+<a href=\"/content/lem/business/us/en/advertise/resources.html\">Success Hub</a></p>\r\n"}}" id="header-resources-success-hub" class="cmp-text">
+Success Hub
+<a href=\"/content/lem/business/us/en/advertise/ads/marketing-training-certification.html\">Learning Courses &amp; Certifications</a></p>\r\n"}}" id="header-resources-learning" class="cmp-text">
+Learning Courses & Certifications
+<a href=\"https://www.linkedin.com/business/marketing/blog/linkedin-ads?src=direct%2Fnone&amp;veh=direct%2Fnone%7Cdirect%2Fnone\" target=\"_blank\">LinkedIn Ads Blog</a></p>\r\n"}}" id="header-resources-ads-blog" class="cmp-text">
+LinkedIn Ads Blog
+By Business Type
+<a href=\"/content/lem/business/us/en/advertise/ads/small-business-advertising.html\">Small Businesses</a></p>\r\n"}}" id="header-resources-small-business" class="cmp-text">
+Small Businesses
+<a href=\"/content/lem/business/us/en/advertise/agencies.html\">Agencies</a></p>\r\n"}}" id="header-resources-agencies" class="cmp-text">
+Agencies
+<a href=\"/content/lem/business/us/en/advertise/sign-in.html\" title=\"Sign in\">Sign in</a></p>\r\n"}}" id="lms-en-us-primary-header-sign-in" class="cmp-text">
+Sign in
+Create ad
+&nbsp; &nbsp;</p>\r\n"}}" id="text-c3c44f596e" class="cmp-text">
+LinkedIn Ads guide
+Find the right ad format for your needs.</p>\r\n"}}" id="text-0ed2ef00d3" class="cmp-text">
+Find the right ad format for your needs.
+Create ad
+&nbsp; &nbsp;</p>\r\n"}}" id="text-b1c73d4e11" class="cmp-text">
+&nbsp; &nbsp;</p>\r\n"}}" id="text-9a42cec304" class="cmp-text">
+&nbsp; &nbsp;</p>\r\n"}}" id="text-94e8edbe70" class="cmp-text">
+Engaging the right buyers begins with choosing the most effective ad format for your objective.
+Whether you're building brand awareness, generating qualified leads, or driving pipeline with high-value offers, LinkedIn offers ad formats built to reach the right audience.<br />\r\n<br />\r\nFrom Single Image and Video Ads to Lead Gen Forms and Document Ads, get a look at each format with practical use cases, and creative guidance to help you find the best ad format for your next campaign.</p>\r\n"}}" id="text-b12771377c" class="cmp-text">
+Whether you're building brand awareness, generating qualified leads, or driving pipeline with high-value offers, LinkedIn offers ad formats built to reach the right audience.
+From Single Image and Video Ads to Lead Gen Forms and Document Ads, get a look at each format with practical use cases, and creative guidance to help you find the best ad format for your next campaign.
+LinkedIn ad types and assets
+Each ad type has a different look and feel, designed to help you achieve different goals.</p>\r\n"}}" id="text-4dd50305f3" class="cmp-text">
+Each ad type has a different look and feel, designed to help you achieve different goals.
+<a href=\"#sponsored-content\">Sponsored <br>\r\nContent<br>\r\n <br>\r\n ↓</a><br>\r\n</p>\r\n"}}" id="text-0ff3b24385" class="cmp-text">
+Sponsored
+Content
+↓
+&nbsp; &nbsp;</p>\r\n"}}" id="text-b90736fc47" class="cmp-text">
+<a href=\"#sponsored-messaging\">Sponsored <br>\r\nMessaging<br>\r\n<br>\r\n↓</a></p>\r\n"}}" id="text-3a8c1dd798" class="cmp-text">
+Sponsored
+Messaging
+↓
+&nbsp; &nbsp;</p>\r\n"}}" id="text-8a436dda3a" class="cmp-text">
+<a href=\"#dynamic-ads\">Dynamic Ads<br>\r\n<br>\r\n<br>\r\n↓</a></p>\r\n"}}" id="text-7545c66a60" class="cmp-text">
+Dynamic Ads
+↓
+&nbsp; &nbsp;</p>\r\n"}}" id="text-2ad5cad404" class="cmp-text">
+<a href=\"#text-ads\">Text Ads<br>\r\n<br>\r\n <br>\r\n ↓</a></p>\r\n"}}" id="text-46ba45df67" class="cmp-text">
+Text Ads
+↓
+&nbsp; &nbsp;</p>\r\n"}}" id="text-4cbe14cc43" class="cmp-text">
+<a href=\"#lead-gen-forms\">Lead Gen Forms <br>\r\n <br>\r\n<br>\r\n ↓</a></p>\r\n"}}" id="text-d035ebc261" class="cmp-text">
+Lead Gen Forms
+↓
+&nbsp; &nbsp;</p>\r\n"}}" id="text-eea7a91ed3" class="cmp-text">
+Sponsored Content
+Reach a highly engaged audience in the LinkedIn news feed.</p>\r\n"}}" id="text-a2f5145118" class="cmp-text">
+Reach a highly engaged audience in the LinkedIn news feed.
+Single Image Ads
+Promote your message directly in the LinkedIn feed. Target with precision across desktop and mobile devices.</p>\r\n<p> </p>\r\n<p><b>How you can use</b><br />\r\nMarketers use Single Image Ads to drive focused engagement with a clear message, a strong visual, and a single call to action. A reliable choice when you need to get straight to the point.</p>\r\n<p> </p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Drive traffic to product or solution pages</li>\r\n<li>Announce a limited-time offer</li>\r\n<li>Promote a new piece of content or asset</li>\r\n</ul>\r\n<p> </p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Dimensions: 1200x627 pixels</li>\r\n<li>File Format: PNG or JPG</li>\r\n<li>File Size: Under 5MB</li>\r\n<li>Required Elements: Headline, text, and CTA (Call to Action)</li>\r\n</ul>\r\n"}}" id="text-007106ce3b" class="cmp-text">
+Promote your message directly in the LinkedIn feed. Target with precision across desktop and mobile devices.
+How you can use
+Marketers use Single Image Ads to drive focused engagement with a clear message, a strong visual, and a single call to action. A reliable choice when you need to get straight to the point.
+Use cases:
+Drive traffic to product or solution pages
+Announce a limited-time offer
+Promote a new piece of content or asset
+Specs at a glance:
+Dimensions: 1200x627 pixels
+File Format: PNG or JPG
+File Size: Under 5MB
+Required Elements: Headline, text, and CTA (Call to Action)
+Learn more
+View more specs
+Video Ads
+Tell a richer story with motion, sound, and narrative delivered directly in the LinkedIn feed.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use Video Ads to build brand awareness, explain complex ideas, or show products in action all while capturing attention in a format designed for scrolling behavior.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Showcase a product suite or feature set</li>\r\n<li>Share customer testimonials or use case highlights</li>\r\n<li>Drive deeper storytelling across multiple cards</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>File Format: MP4</li>\r\n<li>File Size: Under 500MB</li>\r\n<li>Aspect Ratios: Multiple ratios supported</li>\r\n<li>Video Length: Up to 30 minutes</li>\r\n</ul>\r\n"}}" id="text-8c307e03ff" class="cmp-text">
+Tell a richer story with motion, sound, and narrative delivered directly in the LinkedIn feed.
+How you can use
+Marketers use Video Ads to build brand awareness, explain complex ideas, or show products in action all while capturing attention in a format designed for scrolling behavior.
+Use cases:
+Showcase a product suite or feature set
+Share customer testimonials or use case highlights
+Drive deeper storytelling across multiple cards
+Specs at a glance:
+File Format: MP4
+File Size: Under 500MB
+Aspect Ratios: Multiple ratios supported
+Video Length: Up to 30 minutes
+Learn more
+View more specs
+Carousel Ads
+Tell a multi-part story with a swipeable series of images all within a single ad unit.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the Carousel Ads format to highlight multiple products, walk through processes, or share a sequence of insights. Perfect for campaigns that need more space to engage.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Showcase a product suite or feature set</li>\r\n<li>Share customer testimonials or use case highlights</li>\r\n<li>Drive deeper storytelling across multiple cards</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Card Count: 2–10 cards</li>\r\n<li>Recommended Resolution: 1080x1080 pixels</li>\r\n<li>File Format: JPG or PNG</li>\r\n<li>Max File Size: 10MB</li>\r\n</ul>\r\n"}}" id="text-737376c6ea" class="cmp-text">
+Tell a multi-part story with a swipeable series of images all within a single ad unit.
+How you can use
+Marketers use the Carousel Ads format to highlight multiple products, walk through processes, or share a sequence of insights. Perfect for campaigns that need more space to engage.
+Use cases:
+Showcase a product suite or feature set
+Share customer testimonials or use case highlights
+Drive deeper storytelling across multiple cards
+Specs at a glance:
+Card Count: 2–10 cards
+Recommended Resolution: 1080x1080 pixels
+File Format: JPG or PNG
+Max File Size: 10MB
+Learn more
+View more specs
+Event Ads
+Promote upcoming events directly from the LinkedIn feed to drive registrations and boost attendance.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the Event Ads format to spotlight upcoming LinkedIn or third-party events, targeting the right audience with real-time relevance. These ads display event details like date, time, and location with a built-in registration button that makes it easy to convert.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Promote virtual or in-person events to a professional audience</li>\r\n<li>Drive webinar or livestream registrations</li>\r\n<li>Reach last-minute registrants with time-sensitive ads</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Purpose: Promotes LinkedIn Event page</li>\r\n<li>Image Ratio: 4:1 image pulled from the event page</li>\r\n<li>Intro Text: Up to 600 characters</li>\r\n</ul>\r\n"}}" id="text-a23d1368ca" class="cmp-text">
+Promote upcoming events directly from the LinkedIn feed to drive registrations and boost attendance.
+How you can use
+Marketers use the Event Ads format to spotlight upcoming LinkedIn or third-party events, targeting the right audience with real-time relevance. These ads display event details like date, time, and location with a built-in registration button that makes it easy to convert.
+Use cases:
+Promote virtual or in-person events to a professional audience
+Drive webinar or livestream registrations
+Reach last-minute registrants with time-sensitive ads
+Specs at a glance:
+Purpose: Promotes LinkedIn Event page
+Image Ratio: 4:1 image pulled from the event page
+Intro Text: Up to 600 characters
+Learn more
+View more specs
+Document Ads
+Share valuable content directly in the LinkedIn feed. No landing page required.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use Document Ads to preview eBooks, guides, or whitepapers directly in the feed, making it easier for audiences to engage with long-form content and convert without leaving the platform.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Promote thought leadership or research</li>\r\n<li>Preview downloadable assets like guides or reports</li>\r\n<li>Collect leads in exchange for content access</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>File Format: PDF, DOCX, or PPTXMax&nbsp;</li>\r\n<li>File Size: Up to 100MB</li>\r\n<li>Page Limit: 300 pages maximum</li>\r\n</ul>\r\n<p><br>\r\n&nbsp;</p>\r\n"}}" id="text-758cfd79e3" class="cmp-text">
+Share valuable content directly in the LinkedIn feed. No landing page required.
+How you can use
+Marketers use Document Ads to preview eBooks, guides, or whitepapers directly in the feed, making it easier for audiences to engage with long-form content and convert without leaving the platform.
+Use cases:
+Promote thought leadership or research
+Preview downloadable assets like guides or reports
+Collect leads in exchange for content access
+Specs at a glance:
+File Format: PDF, DOCX, or PPTXMax
+File Size: Up to 100MB
+Page Limit: 300 pages maximum
+Learn more
+View more specs
+Thought Leader Ads
+Promote content from executives, subject matter experts, or employees directly in the LinkedIn feed.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use this format to build brand trust by amplifying authentic voices. By sponsoring posts from individuals instead of just company pages, you can humanize your message and boost credibility across the buyer journey.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Highlight industry insights from company leaders</li>\r\n<li>Promote founder posts or behind-the-scenes commentary</li>\r\n<li>Spark engagement with POV-driven content</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Purpose: Promotes text, image, video, Newsletter, or Article posts from verified employees and 1st, 2nd, or 3rd-degree connections</li>\r\n<li>Required Elements: Post includes profile, post content, and CTA (Call to Action)</li>\r\n</ul>\r\n"}}" id="text-727be538d4" class="cmp-text">
+Promote content from executives, subject matter experts, or employees directly in the LinkedIn feed.
+How you can use
+Marketers use this format to build brand trust by amplifying authentic voices. By sponsoring posts from individuals instead of just company pages, you can humanize your message and boost credibility across the buyer journey.
+Use cases:
+Highlight industry insights from company leaders
+Promote founder posts or behind-the-scenes commentary
+Spark engagement with POV-driven content
+Specs at a glance:
+Purpose: Promotes text, image, video, Newsletter, or Article posts from verified employees and 1st, 2nd, or 3rd-degree connections
+Required Elements: Post includes profile, post content, and CTA (Call to Action)
+Learn more
+View more specs
+Connected TV Ads
+Extend your brand message to premium streaming environments now available through LinkedIn.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use CTV Ads to reach professional audiences beyond the feed. These video ads are served on high-quality streaming platforms and allow brands to drive upper-funnel awareness with precise B2B targeting powered by LinkedIn data.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Boost brand recall with full-screen video</li>\r\n<li>Reach decision-makers outside the desktop and mobile feed</li>\r\n<li>Pair with feed-based campaigns to expand reach</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Delivery: Via streaming platforms</li>\r\n<li>Targeting: Powered by LinkedIn targeting</li>\r\n<li>Specifications: Supports standard video ad specs</li>\r\n</ul>\r\n"}}" id="text-b2e3869354" class="cmp-text">
+Extend your brand message to premium streaming environments now available through LinkedIn.
+How you can use
+Marketers use CTV Ads to reach professional audiences beyond the feed. These video ads are served on high-quality streaming platforms and allow brands to drive upper-funnel awareness with precise B2B targeting powered by LinkedIn data.
+Use cases:
+Boost brand recall with full-screen video
+Reach decision-makers outside the desktop and mobile feed
+Pair with feed-based campaigns to expand reach
+Specs at a glance:
+Delivery: Via streaming platforms
+Targeting: Powered by LinkedIn targeting
+Specifications: Supports standard video ad specs
+Learn more
+View more specs
+Article and Newsletter Ads
+Sponsor long-form content directly in the feed to build thought leadership and drive deeper engagement.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use these ad formats to promote in-depth posts or recurring newsletters authored by executives, experts, or employees. Brands stay top of mind by delivering valuable insights on a consistent basis.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Extend reach of original thought leadership content</li>\r\n<li>Grow newsletter subscriber lists</li>\r\n<li>Support product launches with POV-driven analyst</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Purpose: Promotes native LinkedIn articles or newsletters from verified authors</li>\r\n<li>Required Elements: Includes post content, profile, and CTA</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n"}}" id="text-23cd180532" class="cmp-text">
+Sponsor long-form content directly in the feed to build thought leadership and drive deeper engagement.
+How you can use
+Marketers use these ad formats to promote in-depth posts or recurring newsletters authored by executives, experts, or employees. Brands stay top of mind by delivering valuable insights on a consistent basis.
+Use cases:
+Extend reach of original thought leadership content
+Grow newsletter subscriber lists
+Support product launches with POV-driven analyst
+Specs at a glance:
+Purpose: Promotes native LinkedIn articles or newsletters from verified authors
+Required Elements: Includes post content, profile, and CTA
+Learn more
+View more specs
+Job Ads
+Put your open roles in front of the right candidates when and where they’re actively looking to make a change.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nTalent teams use Job Ads to reach both active job seekers and qualified professionals who may not be actively searching. With dynamic targeting based on real-time profile data, you can promote critical roles to people with the skills and experience you're hiring for.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Fill open roles faster with targeted visibility</li>\r\n<li>Reach qualified candidates beyond your existing network</li>\r\n<li>Support DEI hiring goals with tailored targeting</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Source: Uses an existing LinkedIn job post</li>\r\n<li>Intro Text: Up to 150 characters</li>\r\n</ul>\r\n"}}" id="text-f8029690dd" class="cmp-text">
+Put your open roles in front of the right candidates when and where they’re actively looking to make a change.
+How you can use
+Talent teams use Job Ads to reach both active job seekers and qualified professionals who may not be actively searching. With dynamic targeting based on real-time profile data, you can promote critical roles to people with the skills and experience you're hiring for.
+Use cases:
+Fill open roles faster with targeted visibility
+Reach qualified candidates beyond your existing network
+Support DEI hiring goals with tailored targeting
+Specs at a glance:
+Source: Uses an existing LinkedIn job post
+Intro Text: Up to 150 characters
+Learn more
+<a href=\"#nav\">Back to top</a></p>\r\n"}}" id="text-b3c9f5721b" class="cmp-text">
+Back to top
+Sponsored Messaging
+Engage your audience in LinkedIn Messaging, where professional conversations happen.</p>\r\n"}}" id="text-ab673d33e6" class="cmp-text">
+Engage your audience in LinkedIn Messaging, where professional conversations happen.
+Conversation Ads
+Let prospects explore content paths tailored to their interests within a single, interactive message.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the Conversation Ad format to deepen engagement by offering multiple CTAs in one message. With built-in lead gen and click-level insights, they’re ideal for campaigns where flexibility and personalization drive better outcomes.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Invite prospects to webinars, events, or product demos</li>\r\n<li>Share multiple content offers from a single message</li>\r\n<li>Qualify leads through guided question flows</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Call to Action: Up to 5 CTAs</li>\r\n<li>Banner Companion: Optional 300x250px banner (desktop only)</li>\r\n<li>Message Length: Up to 8,000 characters</li>\r\n</ul>\r\n"}}" id="text-362d779fe3" class="cmp-text">
+Let prospects explore content paths tailored to their interests within a single, interactive message.
+How you can use
+Marketers use the Conversation Ad format to deepen engagement by offering multiple CTAs in one message. With built-in lead gen and click-level insights, they’re ideal for campaigns where flexibility and personalization drive better outcomes.
+Use cases:
+Invite prospects to webinars, events, or product demos
+Share multiple content offers from a single message
+Qualify leads through guided question flows
+Specs at a glance:
+Call to Action: Up to 5 CTAs
+Banner Companion: Optional 300x250px banner (desktop only)
+Message Length: Up to 8,000 characters
+Learn more
+View more specs
+Message Ads
+Send a direct, one-to-one message to a targeted prospect’s LinkedIn inbox.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the LinkedIn Message Ad format to deliver a single, focused message with a clear CTA. Perfect for driving sign-ups, content downloads, or demo requests. Delivered only when members are active, so messages feel timely and personal.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Invite high-intent prospects to an event or webinar</li>\r\n<li>Share a limited-time offer or asset</li>\r\n<li>Drive conversions with a focused lead gen CTA</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Message Length: Up to 1,500 characters</li>\r\n<li>Banner Companion: Optional 300x250px desktop banner</li>\r\n<li>Call to Action: 20-character CTA limit</li>\r\n</ul>\r\n"}}" id="text-48ce898807" class="cmp-text">
+Send a direct, one-to-one message to a targeted prospect’s LinkedIn inbox.
+How you can use
+Marketers use the LinkedIn Message Ad format to deliver a single, focused message with a clear CTA. Perfect for driving sign-ups, content downloads, or demo requests. Delivered only when members are active, so messages feel timely and personal.
+Use cases:
+Invite high-intent prospects to an event or webinar
+Share a limited-time offer or asset
+Drive conversions with a focused lead gen CTA
+Specs at a glance:
+Message Length: Up to 1,500 characters
+Banner Companion: Optional 300x250px desktop banner
+Call to Action: 20-character CTA limit
+Learn more
+View more specs
+<a href=\"#nav\">Back to top</a></p>\r\n"}}" id="text-2a0a77133a" class="cmp-text">
+Back to top
+Dynamic Ads
+Engage your audience in LinkedIn Messaging, where professional conversations happen.</p>\r\n"}}" id="text-b3e0b869b1" class="cmp-text">
+Engage your audience in LinkedIn Messaging, where professional conversations happen.
+Spotlight Ads
+Drive attention to your brand, product, or offer with a personalized ad that features each viewer’s profile info.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use Spotlight Ads to create highly personalized experiences at scale. These ads appear on the right rail and dynamically pull in the member’s photo, job title, and company, creating a tailored call-to-action that feels more relevant and clickable.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Promote a product launch or service</li>\r\n<li>Drive traffic to a targeted landing page</li>\r\n<li>Support brand awareness with personalized messaging</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Placement: Right-rail format</li>\r\n<li>Logo Size: 100x100 pixels</li>\r\n<li>Background: Optional 300x250px image</li>\r\n<li>Headline: Up to 50 characters</li>\r\n</ul>\r\n"}}" id="text-c0b1c6428d" class="cmp-text">
+Drive attention to your brand, product, or offer with a personalized ad that features each viewer’s profile info.
+How you can use
+Marketers use Spotlight Ads to create highly personalized experiences at scale. These ads appear on the right rail and dynamically pull in the member’s photo, job title, and company, creating a tailored call-to-action that feels more relevant and clickable.
+Use cases:
+Promote a product launch or service
+Drive traffic to a targeted landing page
+Support brand awareness with personalized messaging
+Specs at a glance:
+Placement: Right-rail format
+Logo Size: 100x100 pixels
+Background: Optional 300x250px image
+Headline: Up to 50 characters
+Learn more
+View more specs
+Follower Ads
+Grow your LinkedIn Page audience by inviting professionals to follow your brand directly from..</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the Follower Ads format to expand their organic reach by turning ad impressions into long-term followers. These ads appear on the right rail and include the viewer’s profile image to create a personalized invitation to connect with your Page.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Increase your Page follower count</li>\r\n<li>Build an audience for organic updates and thought leadership</li>\r\n<li>Support long-term engagement with your brand</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Placement: Right-rail format</li>\r\n<li>Logo Size: 100x100 pixels</li>\r\n<li>Headline: Personalized headline up to 50 characters</li>\r\n<li>Options: Preset CTA and description options</li>\r\n</ul>\r\n"}}" id="text-aa960e36ef" class="cmp-text">
+Grow your LinkedIn Page audience by inviting professionals to follow your brand directly from..
+How you can use
+Marketers use the Follower Ads format to expand their organic reach by turning ad impressions into long-term followers. These ads appear on the right rail and include the viewer’s profile image to create a personalized invitation to connect with your Page.
+Use cases:
+Increase your Page follower count
+Build an audience for organic updates and thought leadership
+Support long-term engagement with your brand
+Specs at a glance:
+Placement: Right-rail format
+Logo Size: 100x100 pixels
+Headline: Personalized headline up to 50 characters
+Options: Preset CTA and description options
+Learn more
+View more specs
+<a href=\"#nav\">Back to top</a></p>\r\n"}}" id="text-ffd058d216" class="cmp-text">
+Back to top
+Text Ads
+Run ads to right of LinkedIn’s feed.</p>\r\n"}}" id="text-c4b4c99a4b" class="cmp-text">
+Run ads to right of LinkedIn’s feed.
+Text Ads
+Drive attention to your brand, product, or offer with a personalized ad that features each viewer’s profile info.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use Spotlight Ads to create highly personalized experiences at scale. These ads appear on the right rail and dynamically pull in the member’s photo, job title, and company, creating a tailored call-to-action that feels more relevant and clickable.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Promote a product launch or service</li>\r\n<li>Drive traffic to a targeted landing page</li>\r\n<li>Support brand awareness with personalized messaging</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Placement: Right-rail format</li>\r\n<li>Logo Size: 100x100 pixels</li>\r\n<li>Background: Optional 300x250px image</li>\r\n<li>Headline: Up to 50 characters</li>\r\n</ul>\r\n"}}" id="text-c49d2f63f2" class="cmp-text">
+Drive attention to your brand, product, or offer with a personalized ad that features each viewer’s profile info.
+How you can use
+Marketers use Spotlight Ads to create highly personalized experiences at scale. These ads appear on the right rail and dynamically pull in the member’s photo, job title, and company, creating a tailored call-to-action that feels more relevant and clickable.
+Use cases:
+Promote a product launch or service
+Drive traffic to a targeted landing page
+Support brand awareness with personalized messaging
+Specs at a glance:
+Placement: Right-rail format
+Logo Size: 100x100 pixels
+Background: Optional 300x250px image
+Headline: Up to 50 characters
+Learn more
+View more specs
+<a href=\"#nav\">Back to top</a></p>\r\n"}}" id="text-184ccde107" class="cmp-text">
+Back to top
+Lead Gen Forms
+Pre-filled forms for your LinkedIn Ads.</p>\r\n"}}" id="text-df775a26d8" class="cmp-text">
+Pre-filled forms for your LinkedIn Ads.
+Lead Gen Forms
+Capture leads instantly using pre-filled data from LinkedIn profiles.</p>\r\n<p>&nbsp;</p>\r\n<p><b>How you can use</b><br>\r\nMarketers use the Lead Gen Form ad format to reduce friction for prospects by removing the need to leave the LinkedIn feed or manually fill out contact information.</p>\r\n<p>&nbsp;</p>\r\n<p><b>Use cases:</b></p>\r\n<ul>\r\n<li>Drive sign-ups for webinars, demos, or events</li>\r\n<li>Promote gated assets like eBooks or whitepapers</li>\r\n<li>Collect contact details for follow-up or nurturing</li>\r\n</ul>\r\n<p>&nbsp;</p>\r\n<p><b>Specs at a glance:</b></p>\r\n<ul>\r\n<li>Form Fields: Up to 12 fields</li>\r\n<li>Customization: 3 custom questions</li>\r\n<li>Data &amp; Integration: Includes CRM integration and CSV download</li>\r\n</ul>\r\n"}}" id="text-f0eeeeee9e" class="cmp-text">
+Capture leads instantly using pre-filled data from LinkedIn profiles.
+How you can use
+Marketers use the Lead Gen Form ad format to reduce friction for prospects by removing the need to leave the LinkedIn feed or manually fill out contact information.
+Use cases:
+Drive sign-ups for webinars, demos, or events
+Promote gated assets like eBooks or whitepapers
+Collect contact details for follow-up or nurturing
+Specs at a glance:
+Form Fields: Up to 12 fields
+Customization: 3 custom questions
+Data & Integration: Includes CRM integration and CSV download
+Learn more
+View more specs
+<a href=\"#nav\">Back to top</a></p>\r\n"}}" id="text-5e44ea5ff5" class="cmp-text">
+Back to top
+Explore LinkedIn ad tips and best practices
+<a href=\"/content/lem/business/us/en/advertise/ads/best-practices.html\">Learn more</a></p>\r\n"}}" id="text-def10c7137" class="cmp-text">
+Learn more
+&nbsp; &nbsp;</p>\r\n"}}" id="text-57b27348bd" class="cmp-text">
+&nbsp; &nbsp;</p>\r\n"}}" id="text-32130ed526" class="cmp-text">
+Reach your audience with the right ad formats on LinkedIn.
+Create ad
+&nbsp; &nbsp;</p>\r\n"}}" id="text-d9247984a4" class="cmp-text">
+Hire
+<a href=\"https://business.linkedin.com/talent-solutions/recruiter/\" title=\"Recruiter\">Recruiter</a></p>\r\n"}}" id="footer-hire-recruiter" class="cmp-text">
+Recruiter
+<a href=\"https://business.linkedin.com/talent-solutions/recruiter-lite/?\" title=\"Recruiter Lite\">Recruiter Lite</a></p>\r\n"}}" id="footer-hire-recruiter-lite" class="cmp-text">
+Recruiter Lite
+<a href=\"https://business.linkedin.com/talent-solutions/employee-referral-program/?\" title=\"Referrals\">Referrals</a></p>\r\n"}}" id="footer-hire-referrals" class="cmp-text">
+Referrals
+<a href=\"https://business.linkedin.com/talent-solutions/advertise-jobs/?\" title=\"Job Slots\">Job Slots</a></p>\r\n"}}" id="footer-hire-job-slots" class="cmp-text">
+Job Slots
+<a href=\"https://business.linkedin.com/talent-solutions/post-jobs/?\" title=\"Job Posts\">Job Posts</a></p>\r\n"}}" id="footer-hire-job-posts" class="cmp-text">
+Job Posts
+<a href=\"https://business.linkedin.com/talent-solutions/company-career-pages/?\" title=\"Career Pages\">Career Pages</a></p>\r\n"}}" id="footer-hire-career-pages" class="cmp-text">
+Career Pages
+<a href=\"https://business.linkedin.com/talent-solutions/job-ads/?\" title=\"Work With Us Ads\">Work With Us Ads</a></p>\r\n"}}" id="footer-hire-work-with-us" class="cmp-text">
+Work With Us Ads
+<a href=\"https://business.linkedin.com/talent-solutions/blog/?\">Talent Blog</a></p>\r\n"}}" id="footer-hire-talent" class="cmp-text">
+Talent Blog
+Advertise
+<a href=\"/content/lem/business/us/en/advertise/ads/sponsored-content.html\" title=\"Sponsored Content\">Sponsored Content</a></p>\r\n"}}" id="footer-market-sponsored" class="cmp-text">
+Sponsored Content
+<a href=\"/content/lem/business/us/en/advertise/ads/sponsored-messaging/message-ads.html\" title=\"Message Ads\">Message Ads</a></p>\r\n"}}" id="footer-market-message" class="cmp-text">
+Message Ads
+<a href=\"/content/lem/business/us/en/advertise/ads/dynamic-ads.html\" title=\"Dynamic Ads\">Dynamic Ads</a></p>\r\n"}}" id="footer-market-dynamic" class="cmp-text">
+Dynamic Ads
+<a href=\"/content/lem/business/us/en/advertise/ads/text-ads.html\" title=\"Text Ads\">Text Ads</a></p>\r\n"}}" id="footer-market-text" class="cmp-text">
+Text Ads
+<a href=\"https://www.linkedin.com/business/marketing/blog/?\">Marketing Blog</a></p>\r\n"}}" id="footer-market-marketing" class="cmp-text">
+Marketing Blog
+Sell
+<a href=\"https://business.linkedin.com/sales-solutions/sales-navigator/\" title=\"Sales Navigator\" target=\"_blank\">Sales Navigator</a></p>\r\n"}}" id="footer-sell-sales" class="cmp-text">
+Sales Navigator
+<a href=\"https://business.linkedin.com/sales-solutions/blog?\" target=\"_blank\">Sales Blog</a></p>\r\n"}}" id="footer-sell-sales-blog" class="cmp-text">
+Sales Blog
+Learn
+<a href=\"https://learning.linkedin.com/for-entire-companies/?\" title=\"For businesses\" target=\"_blank\">For businesses</a></p>\r\n"}}" id="footer-learn-business" class="cmp-text">
+For businesses
+<a href=\"https://learning.linkedin.com/for-higher-education/\" title=\"For higher education\" target=\"_blank\">For higher education</a></p>\r\n"}}" id="footer-learn-education" class="cmp-text">
+For higher education
+<a href=\"https://learning.linkedin.com/for-governments-old?\" title=\"For government agencies\" target=\"_blank\">For government agencies</a></p>\r\n"}}" id="footer-learn-gov" class="cmp-text">
+For government agencies
+<a href=\"https://learning.linkedin.com/for-libraries?\" title=\"For libraries\" target=\"_blank\">For libraries</a></p>\r\n"}}" id="footer-learn-library" class="cmp-text">
+For libraries
+<a href=\"https://learning.linkedin.com/products?\" title=\"See all products\" target=\"_blank\">See all products</a></p>\r\n"}}" id="footer-learn-see-all" class="cmp-text">
+See all products
+<a href=\"https://learning.linkedin.com/blog/?\" target=\"_blank\">Learning Blog</a></p>\r\n"}}" id="footer-learn-learning-blog" class="cmp-text">
+Learning Blog
+See More
+<a id=\"footer-view-more\" href=\"https://business.linkedin.com/\">View more business solutions</a></p>\r\n"}}" id="footer-view-more-business" class="cmp-text">
+View more business solutions
+<a href=\"https://about.linkedin.com/\" target=\"_blank\">About</a></p>\r\n"}}" id="footer-about" class="cmp-text">
+About
+<a href=\"https://www.linkedin.com/legal/cookie-policy?src=direct%2Fnone&amp;veh=direct%2Fnone\" target=\"_blank\">Cookie Policy</a></p>\r\n"}}" id="footer-cookie" class="cmp-text">
+Cookie Policy
+<a href=\"https://www.linkedin.com/legal/privacy-policy?src=direct%2Fnone&amp;veh=direct%2Fnone\" target=\"_blank\">Privacy Policy</a></p>\r\n"}}" id="footer-privacy" class="cmp-text">
+Privacy Policy
+<a href=\"https://www.linkedin.com/legal/california-privacy-disclosure?src=direct%2Fnone&amp;veh=direct%2Fnone\" target=\"_blank\">Your California Privacy Choices</a></p>\r\n"}}" id="footer-california" class="cmp-text">
+Your California Privacy Choices
+<a href=\"https://www.linkedin.com/legal/user-agreement?src=direct%2Fnone&amp;veh=direct%2Fnone\" target=\"_blank\">User Agreement</a></p>\r\n"}}" id="footer-user-agreement" class="cmp-text">
+User Agreement
+<a href=\"https://www.linkedin.com/accessibility?src=direct%2Fnone&amp;veh=direct%2Fnone\" target=\"_blank\">Accessibility</a></p>\r\n"}}" id="footer-accessibility" class="cmp-text">
+Accessibility
+© LinkedIn Corporation 2026</p>\r\n"}}" id="text-0427849ca7" class="cmp-text">
+© LinkedIn Corporation 2026
+Have questions?
+Have questions?
+Talk to a specialist now</p>\n"}}" id="text-12635d83da" class="cmp-text">
+Talk to a specialist now
+Chat now
+Learn more about LinkedIn Ads</p>\r\n"}}" id="text-6b33208d1b" class="cmp-text">
+Learn more about LinkedIn Ads
+Get support
+dismiss
