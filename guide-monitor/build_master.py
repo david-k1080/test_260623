@@ -172,12 +172,20 @@ ws4 = wb.create_sheet("가이드 URL")
 reg = list(csv.DictReader(open(f"{REPO}/guide-monitor/guide-registry.csv", encoding="utf-8")))
 sheet(ws4, ["ID", "매체", "문서", "URL", "유형", "상태", "감지 방식", "메모", "확인일"], [(r["guide_id"], r["media"], r["guide"], r["url"], r["url_type"], r["status"], r["method"], r["notes"], r["probed_at"]) for r in reg], [26, 16, 34, 60, 14, 12, 10, 60, 11])
 
+ws6 = wb.create_sheet("메조 마일스톤 2026")
+ms = list(csv.DictReader(open(f"{REPO}/mezzo-milestone-2026.csv", encoding="utf-8")))
+for r in ms:
+    r["우리 목록 상태"] = r["우리 목록 상태"] if r["우리 목록 상태"] else "미등록"
+FILL["미등록"] = "FCE4D6"
+sheet(ws6, ["영역", "그룹", "세부", "항목", "우리 목록 상태", "매칭된 우리 매체"], [(r["영역"], r["그룹"], r["세부"], r["항목"], r["우리 목록 상태"], r["매칭된 우리 매체"]) for r in ms], [20, 28, 22, 30, 14, 36], statcol=4)
+
 ws5 = wb.create_sheet("읽는 법")
 for line in [
     "매체 마스터: 지도(media-mindmap.html)와 같은 98개 매체, 수집 상태와 확인한 내용.",
     "확인된 규격: 문서 본문에서 직접 읽은 값만. 출처 등급 A=공식 문서, B=렙사·매체사 자료, 내부=이노레드 내부 가이드, C=2차 자료.",
     "검증 상태: verified=독립 소스 2개 이상 일치, official=공식/매체사 단일 소스, consistent-secondary=2차 자료와만 일치, unverified=단일·비공식.",
     "충돌·확인 필요: 소스끼리 값이 다르거나 아직 못 읽은 항목. 제작 전에 원문 확인이 필요한 것은 미해결로 표시.",
+    "메조 마일스톤 2026: CJ 메조미디어가 공개한 한국 디지털 매체 목록 291개 항목과 우리 목록 포함 여부(이름 일치 기준, 근사치).",
     "단가·견적·수수료·연락처는 포함하지 않았다.",
     "작성일 2026-11-25. 이후 변경은 반영되지 않는다.",
 ]: ws5.append([line])
