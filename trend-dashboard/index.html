@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>세대별 밈·트렌드 리포트</title>
+<meta name="description" content="한국 중심 세대별(알파·Z·밀레니얼·X/시니어) 최신 밈·트렌드 리포트 대시보드. 근거 링크(기사·유튜브·커뮤니티), PPT·Excel 내려받기, 공유 링크 지원.">
+<meta property="og:title" content="세대별 밈·트렌드 리포트">
+<meta property="og:description" content="알파·Z·밀레니얼·X/시니어 세대별 밈과 트렌드, 근거 링크와 신뢰도 표기">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c2410c'/%3E%3Cpath d='M7 22 13 14l4 4 8-10' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="wrap hero">
+  <div class="eyebrow">TREND REPORT · <span id="n-trends">0</span>개 트렌드 · <span id="n-src">0</span>개 근거 링크</div>
+  <h1 id="h-title">세대별 밈·트렌드 리포트</h1>
+  <p class="sub" id="h-sub"></p>
+  <p class="asof" id="h-asof"></p>
+</header>
+
+<div class="bar" role="region" aria-label="섹션 내비게이션">
+  <div class="bar-in">
+    <nav class="nav" aria-label="섹션">
+      <a href="#" data-to="summary">요약</a>
+      <a href="#" data-to="generations">세대별</a>
+      <a href="#" data-to="diffusion">확산 구조</a>
+      <a href="#" data-to="cases">브랜드 사례</a>
+      <a href="#" data-to="limits">한계·검증</a>
+      <a href="#" data-to="library">출처 라이브러리</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap tools" role="region" aria-label="필터와 도구">
+    <div class="ctrl">
+      <div class="chips" id="gen-chips" role="group" aria-label="세대 필터"></div>
+      <label class="sr" for="q">트렌드 검색</label>
+      <input type="search" id="q" placeholder="트렌드·근거 검색 (예: 두쫀쿠, 유튜브)" autocomplete="off">
+      <label class="sr" for="conf">신뢰도</label>
+      <select id="conf"></select>
+      <span class="sp"></span>
+      <button class="btn" id="b-link" type="button" title="현재 필터 상태가 담긴 링크를 복사">🔗 링크 복사</button>
+      <button class="btn" id="b-share" type="button">공유</button>
+      <button class="btn" id="b-sum" type="button" title="메신저에 붙여넣을 요약 텍스트">요약 복사</button>
+      <button class="btn pri" id="b-ppt" type="button">PPT</button>
+      <button class="btn pri" id="b-xls" type="button">Excel</button>
+      <button class="btn" id="b-print" type="button">PDF·인쇄</button>
+      <button class="btn" id="b-theme" type="button" aria-label="테마 전환">◐</button>
+    </div>
+</div>
+
+<main class="wrap">
+  <section class="blk" id="summary" aria-labelledby="h-summary">
+    <div class="sec-h"><h2 id="h-summary">요약</h2><span class="lead">핵심 결론과 확인된 수치</span></div>
+    <div id="bluf"></div>
+  </section>
+
+  <section class="blk" id="generations" aria-labelledby="h-gens">
+    <div class="sec-h"><h2 id="h-gens">세대별 밈·트렌드</h2><span class="lead" id="gens-count"></span></div>
+    <div id="gens"></div>
+  </section>
+
+  <section class="blk" id="diffusion" aria-labelledby="h-diff">
+    <div class="sec-h"><h2 id="h-diff">확산 구조</h2><span class="lead">경로 · 수명 주기 · 타임라인</span></div>
+    <div id="diffusion-body"></div>
+  </section>
+
+  <section class="blk" id="cases" aria-labelledby="h-cases">
+    <div class="sec-h"><h2 id="h-cases">브랜드 사례</h2><span class="lead">속도와 맥락이 갈랐다</span></div>
+    <div id="cases-body"></div>
+  </section>
+
+  <section class="blk" id="limits" aria-labelledby="h-limits">
+    <div class="sec-h"><h2 id="h-limits">한계와 추가 검증</h2></div>
+    <div id="limits-body"></div>
+  </section>
+
+  <section class="blk" id="library" aria-labelledby="h-lib">
+    <div class="sec-h"><h2 id="h-lib">출처 라이브러리</h2><span class="lead">기사 · 유튜브 · 커뮤니티 · 밈 DB 전체 근거 링크(위 필터 연동)</span></div>
+    <div id="library-body"></div>
+  </section>
+
+  <section class="blk no-print" aria-label="내려받기와 공유">
+    <div class="card dl-card">
+      <p><b>내려받기·공유.</b> PPT는 세대별 인사이트·트렌드 표·타임라인·사례·한계·영상/커뮤니티 근거 링크(클릭 가능)를 담고, Excel은 트렌드·근거 링크·타임라인·사례·한계·출처 전체를 시트별로 담습니다. 링크 복사는 현재 필터 상태가 주소에 담겨 같은 화면으로 열립니다.</p>
+      <button class="btn pri" id="b-ppt2" type="button">PPT 내려받기</button>
+      <button class="btn pri" id="b-xls2" type="button">Excel 내려받기</button>
+      <button class="btn" id="b-link2" type="button">🔗 링크 복사</button>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>이 대시보드는 검색 결과 요약문(스니펫)에 기반한 조사 결과입니다. 수치 다수가 2차 인용이며 항목마다 신뢰도(확인·2차 인용·미검증)를 표시했습니다.</p>
+  <p>유튜브·커뮤니티 링크는 검색에서 실제로 잡힌 URL이고 제목은 검색 결과 그대로입니다. 본문·날짜는 열람하지 못했으므로 링크를 열어 주장과 맞는지 확인하세요. 「직접 확인」 링크는 각 플랫폼의 검색 페이지로 연결됩니다.</p>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/vendor/pptxgen.bundle.js" defer></script>
+<script src="assets/vendor/exceljs.min.js" defer></script>
+<script src="assets/export.js" defer></script>
+</body>
+</html>
